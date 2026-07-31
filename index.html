@@ -120,26 +120,30 @@
     <!-- Firebase SDK JS Modules (v10.8.0) -->
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
       import { 
         getFirestore, collection, addDoc, getDocs, onSnapshot, doc, setDoc, deleteDoc, query, orderBy 
       } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
       // ⚙️ KONFIGURASI FIREBASE CLOUD DATABASE
-      // Silakan ganti placeholder di bawah ini dengan API Key & Project ID milik Anda
       const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyA1ttpoUOY1WlqoqiuTucSHMUJtKTJyhDw",
+        authDomain: "pos-kasir-room-service.firebaseapp.com",
+        projectId: "pos-kasir-room-service",
+        storageBucket: "pos-kasir-room-service.firebasestorage.app",
+        messagingSenderId: "313066272182",
+        appId: "1:313066272182:web:3163d88241bd288f96bd17",
+        measurementId: "G-FZZFMKV8DS"
       };
 
-      // Inisialisasi Firebase & Firestore Database
+      // Inisialisasi Firebase & Analytics & Firestore Database
       const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
       const db = getFirestore(app);
 
       // Jadikan variabel & metode terakses secara global
+      window.app = app;
+      window.analytics = analytics;
       window.db = db;
       window.dbCollection = collection;
       window.dbAddDoc = addDoc;
@@ -152,7 +156,7 @@
       window.dbOrderBy = orderBy;
 
       // Status Pengecekan Ketersediaan Konfigurasi
-      window.isFirebaseConfigured = () => firebaseConfig.apiKey !== "YOUR_API_KEY";
+      window.isFirebaseConfigured = () => true;
     </script>
 </head>
 <body>
