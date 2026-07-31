@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi POS Kasir Pro - Room Service & Restaurant</title>
+    <title>Aplikasi POS Kasir Pro - Room Service & Restaurant (Cloud Powered)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
@@ -116,6 +116,44 @@
             }
         }
     </style>
+
+    <!-- Firebase SDK JS Modules (v10.8.0) -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+      import { 
+        getFirestore, collection, addDoc, getDocs, onSnapshot, doc, setDoc, deleteDoc, query, orderBy 
+      } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+      // ⚙️ KONFIGURASI FIREBASE CLOUD DATABASE
+      // Silakan ganti placeholder di bawah ini dengan API Key & Project ID milik Anda
+      const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+      };
+
+      // Inisialisasi Firebase & Firestore Database
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      // Jadikan variabel & metode terakses secara global
+      window.db = db;
+      window.dbCollection = collection;
+      window.dbAddDoc = addDoc;
+      window.dbGetDocs = getDocs;
+      window.dbOnSnapshot = onSnapshot;
+      window.dbDoc = doc;
+      window.dbSetDoc = setDoc;
+      window.dbDeleteDoc = deleteDoc;
+      window.dbQuery = query;
+      window.dbOrderBy = orderBy;
+
+      // Status Pengecekan Ketersediaan Konfigurasi
+      window.isFirebaseConfigured = () => firebaseConfig.apiKey !== "YOUR_API_KEY";
+    </script>
 </head>
 <body>
 
@@ -123,6 +161,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark no-print">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="#"><i class="bi bi-receipt-cutoff me-2"></i>POS Kasir Pro - Hotel & Restaurant</a>
+            <span class="badge bg-success ms-2" id="cloudStatusBadge"><i class="bi bi-cloud-check-fill me-1"></i>Cloud Sync</span>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -138,6 +177,13 @@
     </nav>
 
     <div class="container my-4 no-print">
+
+        <!-- Banner Alert Jika Firebase Belum Diisi -->
+        <div id="firebaseConfigAlert" class="alert alert-warning alert-dismissible fade show" style="display:none;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Mode Lokal (Offline):</strong> Anda belum mengganti <code>YOUR_API_KEY</code> pada kode Firebase. Data saat ini tersimpan sementara di browser. Masukkan API Key Firebase Anda untuk mengaktifkan database Cloud Realtime.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
 
         <!-- TAB 1: KASIR / BILL FORM -->
         <div id="billTab" class="tab-page">
@@ -546,7 +592,7 @@
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Script Application Logic -->
+    <!-- Script Application Logic dengan Integrasi Firebase Realtime -->
     <script>
         const STORAGE_ITEMS = 'pos_hotel_items_v2';
         const STORAGE_REKAP = 'pos_hotel_rekap_v2';
@@ -581,7 +627,53 @@
             renderMasterItems();
             renderRekap();
             initBillRows(7);
+
+            // Cek & Sinkronkan dengan Firebase jika API Key telah dikonfigurasi
+            setTimeout(() => {
+                if (window.isFirebaseConfigured && window.isFirebaseConfigured()) {
+                    document.getElementById('cloudStatusBadge').className = 'badge bg-success ms-2';
+                    document.getElementById('cloudStatusBadge').innerHTML = '<i class="bi bi-cloud-check-fill me-1"></i>Cloud Sync Active';
+                    initFirebaseRealtimeSync();
+                } else {
+                    document.getElementById('cloudStatusBadge').className = 'badge bg-warning text-dark ms-2';
+                    document.getElementById('cloudStatusBadge').innerHTML = '<i class="bi bi-hdd-fill me-1"></i>Local Storage';
+                    document.getElementById('firebaseConfigAlert').style.display = 'block';
+                }
+            }, 1000);
         });
+
+        // --- FIREBASE REALTIME LISTENER & SYNCHRONIZATION ---
+        function initFirebaseRealtimeSync() {
+            if (!window.db) return;
+
+            // 1. Sync Master Barang Realtime
+            window.dbOnSnapshot(window.dbCollection(window.db, "master_barang"), (snapshot) => {
+                if (!snapshot.empty) {
+                    let cloudItems = [];
+                    snapshot.forEach(doc => cloudItems.push({ docId: doc.id, ...doc.data() }));
+                    masterItems = cloudItems;
+                    renderMasterItemsUI();
+                }
+            });
+
+            // 2. Sync Rekap Penjualan Realtime
+            window.dbOnSnapshot(window.dbCollection(window.db, "rekap_penjualan"), (snapshot) => {
+                let cloudRekap = [];
+                snapshot.forEach(doc => cloudRekap.push({ docId: doc.id, ...doc.data() }));
+                rekapPenjualan = cloudRekap;
+                renderRekapUI();
+            });
+
+            // 3. Sync Settings Realtime
+            window.dbOnSnapshot(window.dbDoc(window.db, "settings", "app_config"), (docSnap) => {
+                if (docSnap.exists()) {
+                    appSettings = docSnap.data();
+                    loadSettingsToForm();
+                    updateBillHeaderDisplay();
+                    calculateTotal();
+                }
+            });
+        }
 
         function formatDateTimeNow() {
             const now = new Date();
@@ -661,7 +753,7 @@
             }
         }
 
-        function saveSettings(e) {
+        async function saveSettings(e) {
             e.preventDefault();
             appSettings = {
                 billTitle: document.getElementById('settingBillTitle').value,
@@ -670,14 +762,25 @@
                 taxRate: parseFloat(document.getElementById('settingTaxRate').value) || 0,
                 logoBase64: tempLogoBase64
             };
+            
             localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(appSettings));
+
+            // Simpan ke Firebase Cloud jika aktif
+            if (window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                try {
+                    await window.dbSetDoc(window.dbDoc(window.db, "settings", "app_config"), appSettings);
+                } catch(err) {
+                    console.error("Gagal simpan settings ke cloud:", err);
+                }
+            }
+
             updateBillHeaderDisplay();
             calculateTotal();
-            alert('✅ Pengaturan layout bill, logo & tarif pajak berhasil disimpan!');
+            alert('✅ Pengaturan layout bill, logo & tarif pajak berhasil disimpan ke Cloud!');
         }
 
         // --- MASTER BARANG LOGIC ---
-        function renderMasterItems() {
+        function renderMasterItemsUI() {
             const body = document.getElementById('itemsMasterTableBody');
             body.innerHTML = '';
             masterItems.forEach((item, index) => {
@@ -689,7 +792,7 @@
                         <td>${item.satuan}</td>
                         <td>${formatRpExact(item.harga)}</td>
                         <td class="text-center">
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteMasterItem(${index})"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteMasterItem(${index}, '${item.docId || ''}')"><i class="bi bi-trash"></i></button>
                         </td>
                     </tr>
                 `;
@@ -698,26 +801,49 @@
             updateBillRowSelects();
         }
 
-        function submitAddItem(e) {
-            e.preventDefault();
-            const kode = document.getElementById('modalKodeBarang').value.trim();
-            const nama = document.getElementById('modalNamaBarang').value.trim();
-            const kategori = document.getElementById('modalKategoriBarang').value.trim();
-            const satuan = document.getElementById('modalSatuanBarang').value.trim();
-            const harga = parseInt(document.getElementById('modalHargaBarang').value);
+        function renderMasterItems() {
+            renderMasterItemsUI();
+        }
 
-            masterItems.push({ kode, nama, kategori, satuan, harga });
-            renderMasterItems();
+        async function submitAddItem(e) {
+            e.preventDefault();
+            const newItem = {
+                kode: document.getElementById('modalKodeBarang').value.trim(),
+                nama: document.getElementById('modalNamaBarang').value.trim(),
+                kategori: document.getElementById('modalKategoriBarang').value.trim(),
+                satuan: document.getElementById('modalSatuanBarang').value.trim(),
+                harga: parseInt(document.getElementById('modalHargaBarang').value)
+            };
+
+            masterItems.push(newItem);
+            renderMasterItemsUI();
+
+            // Simpan ke Cloud Firebase
+            if (window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                try {
+                    await window.dbAddDoc(window.dbCollection(window.db, "master_barang"), newItem);
+                } catch(err) {
+                    console.error("Gagal menyimpan item ke cloud:", err);
+                }
+            }
 
             document.getElementById('formAddItem').reset();
             bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide();
-            alert('✅ Barang berhasil ditambahkan ke database master!');
+            alert('✅ Barang berhasil ditambahkan!');
         }
 
-        function deleteMasterItem(index) {
+        async function deleteMasterItem(index, docId) {
             if(confirm('Hapus barang ini dari database master?')) {
                 masterItems.splice(index, 1);
-                renderMasterItems();
+                renderMasterItemsUI();
+
+                if (docId && window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                    try {
+                        await window.dbDeleteDoc(window.dbDoc(window.db, "master_barang", docId));
+                    } catch(err) {
+                        console.error("Gagal menghapus item dari cloud:", err);
+                    }
+                }
             }
         }
 
@@ -740,18 +866,23 @@
                 for(let i=1; i<lines.length; i++) {
                     const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
                     if(cols.length >= 4 && cols[0] !== '') {
-                        masterItems.push({
+                        const itemObj = {
                             kode: cols[0],
                             nama: cols[1],
                             kategori: cols[2] || 'F&B',
                             satuan: cols[3] || 'Pcs',
                             harga: parseInt(cols[4] || cols[3]) || 0
-                        });
+                        };
+                        masterItems.push(itemObj);
+
+                        if (window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                            window.dbAddDoc(window.dbCollection(window.db, "master_barang"), itemObj);
+                        }
                         addedCount++;
                     }
                 }
-                renderMasterItems();
-                alert(`✅ Berhasil mengimpor ${addedCount} data barang!`);
+                renderMasterItemsUI();
+                alert(`✅ Berhasil mengimpor ${addedCount} data barang ke Cloud!`);
                 inputEl.value = '';
             };
             reader.readAsText(file);
@@ -865,7 +996,6 @@
         function cetakBillSempurna() {
             const { subtotal, discount, serviceChargeVal, taxVal, grandTotal } = calculateTotal();
             
-            // Populate Header Details
             const pLogoContainer = document.getElementById('pLogoContainer');
             if(appSettings.logoBase64) {
                 pLogoContainer.innerHTML = `<img src="${appSettings.logoBase64}" class="bill-logo-img" alt="Logo">`;
@@ -883,7 +1013,6 @@
             document.getElementById('pNoBill').innerText = prefix + String(currentBillNum).padStart(3, '0');
             document.getElementById('pRoomNo').innerText = document.getElementById('inputRoomNo').value || '101';
 
-            // Populate Items List (Filter out empty items)
             const pItemsBody = document.getElementById('pItemsBody');
             pItemsBody.innerHTML = '';
             let itemCount = 0;
@@ -907,7 +1036,6 @@
                 }
             });
 
-            // If no items were selected, show empty rows cleanly
             if(itemCount === 0) {
                 for(let i=0; i<5; i++) {
                     pItemsBody.innerHTML += `
@@ -921,18 +1049,16 @@
                 }
             }
 
-            // Populate Summary Amounts
             document.getElementById('pSubtotal').innerText = formatRpExact(subtotal);
             document.getElementById('pDiscount').innerText = formatRpExact(discount);
             document.getElementById('pService').innerText = formatRpExact(serviceChargeVal);
             document.getElementById('pTax').innerText = formatRpExact(taxVal);
             document.getElementById('pGrandTotal').innerText = formatRpExact(grandTotal);
 
-            // Trigger System Print Window
             window.print();
         }
 
-        function saveTransaction() {
+        async function saveTransaction() {
             const { subtotal, discount, serviceChargeVal, taxVal, grandTotal } = calculateTotal();
             if(grandTotal <= 0) {
                 alert('⚠️ Peringatan: Pilih item barang dan Qty terlebih dahulu!');
@@ -953,7 +1079,7 @@
 
                 if(kode && qty > 0) {
                     const master = masterItems.find(i => i.kode === kode);
-                    savedItems.push({
+                    const itemData = {
                         noBill,
                         tanggal: dtFormatted,
                         roomGuest: `${roomNo} (${guestName})`,
@@ -965,8 +1091,15 @@
                         discount,
                         serviceCharge: serviceChargeVal,
                         pajak: taxVal,
-                        grandTotal
-                    });
+                        grandTotal,
+                        createdAt: new Date().toISOString()
+                    };
+                    savedItems.push(itemData);
+
+                    // Kirim Transaksi ke Cloud Database Firestore secara otomatis
+                    if (window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                        window.dbAddDoc(window.dbCollection(window.db, "rekap_penjualan"), itemData);
+                    }
                 }
             });
 
@@ -975,29 +1108,25 @@
                 return;
             }
 
-            // Save to Rekap
             rekapPenjualan.push(...savedItems);
             localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
 
-            // Auto Next Bill Number
             currentBillNum++;
             localStorage.setItem(STORAGE_NOTA, currentBillNum);
             updateBillHeaderDisplay();
 
-            // Reset Form for Next Transaction
             document.getElementById('inputDiscount').value = 0;
             document.getElementById('inputPayment').value = '';
             updateLiveDateTime();
             initBillRows(7);
             calculateTotal();
 
-            renderRekap();
-            alert(`✅ Transaksi Bill (${noBill}) berhasil disimpan!
-Nomor bill berikutnya: ${prefix}${String(currentBillNum).padStart(3, '0')}`);
+            renderRekapUI();
+            alert(`✅ Transaksi Bill (${noBill}) berhasil tersimpan ke Cloud Realtime!`);
         }
 
         // --- REKAP PENJUALAN LOGIC ---
-        function renderRekap() {
+        function renderRekapUI() {
             const body = document.getElementById('rekapTableBody');
             body.innerHTML = '';
             rekapPenjualan.forEach((item, index) => {
@@ -1016,7 +1145,7 @@ Nomor bill berikutnya: ${prefix}${String(currentBillNum).padStart(3, '0')}`);
                         <td>${formatRpExact(item.pajak || 0)}</td>
                         <td class="fw-bold text-success">${formatRpExact(item.grandTotal)}</td>
                         <td class="text-center">
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteRekapRow(${index})"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteRekapRow(${index}, '${item.docId || ''}')"><i class="bi bi-trash"></i></button>
                         </td>
                     </tr>
                 `;
@@ -1024,45 +1153,68 @@ Nomor bill berikutnya: ${prefix}${String(currentBillNum).padStart(3, '0')}`);
             localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
         }
 
-        function submitAddRekap(e) {
-            e.preventDefault();
-            const noBill = document.getElementById('rekapModalNoBill').value;
-            const tanggal = document.getElementById('rekapModalTanggal').value;
-            const roomGuest = document.getElementById('rekapModalRoom').value;
-            const kodeBarang = document.getElementById('rekapModalKode').value || 'MANUAL';
-            const namaBarang = document.getElementById('rekapModalNama').value;
-            const harga = parseInt(document.getElementById('rekapModalHarga').value) || 0;
-            const qty = parseInt(document.getElementById('rekapModalQty').value) || 1;
-            const discount = parseInt(document.getElementById('rekapModalDiscount').value) || 0;
-            const subtotal = harga * qty;
-
-            const serviceRate = parseFloat(appSettings.serviceRate || 0);
-            const taxRate = parseFloat(appSettings.taxRate || 0);
-            const serviceCharge = Math.round((subtotal - discount) * (serviceRate / 100));
-            const pajak = Math.round((subtotal - discount + serviceCharge) * (taxRate / 100));
-            const grandTotal = Math.max(0, subtotal - discount + serviceCharge + pajak);
-
-            rekapPenjualan.push({
-                noBill, tanggal, roomGuest, kodeBarang, namaBarang, harga, qty, subtotal, discount, serviceCharge, pajak, grandTotal
-            });
-
-            renderRekap();
-            document.getElementById('formAddRekap').reset();
-            bootstrap.Modal.getInstance(document.getElementById('addRekapModal')).hide();
-            alert('✅ Data transaksi manual berhasil masuk ke rekapan!');
+        function renderRekap() {
+            renderRekapUI();
         }
 
-        function deleteRekapRow(index) {
+        async function submitAddRekap(e) {
+            e.preventDefault();
+            const rekapData = {
+                noBill: document.getElementById('rekapModalNoBill').value,
+                tanggal: document.getElementById('rekapModalTanggal').value,
+                roomGuest: document.getElementById('rekapModalRoom').value,
+                kodeBarang: document.getElementById('rekapModalKode').value || 'MANUAL',
+                namaBarang: document.getElementById('rekapModalNama').value,
+                harga: parseInt(document.getElementById('rekapModalHarga').value) || 0,
+                qty: parseInt(document.getElementById('rekapModalQty').value) || 1,
+                discount: parseInt(document.getElementById('rekapModalDiscount').value) || 0,
+                createdAt: new Date().toISOString()
+            };
+
+            const subtotal = rekapData.harga * rekapData.qty;
+            const serviceRate = parseFloat(appSettings.serviceRate || 0);
+            const taxRate = parseFloat(appSettings.taxRate || 0);
+            
+            rekapData.subtotal = subtotal;
+            rekapData.serviceCharge = Math.round((subtotal - rekapData.discount) * (serviceRate / 100));
+            rekapData.pajak = Math.round((subtotal - rekapData.discount + rekapData.serviceCharge) * (taxRate / 100));
+            rekapData.grandTotal = Math.max(0, subtotal - rekapData.discount + rekapData.serviceCharge + rekapData.pajak);
+
+            rekapPenjualan.push(rekapData);
+            renderRekapUI();
+
+            if (window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                try {
+                    await window.dbAddDoc(window.dbCollection(window.db, "rekap_penjualan"), rekapData);
+                } catch(err) {
+                    console.error("Gagal simpan rekap ke cloud:", err);
+                }
+            }
+
+            document.getElementById('formAddRekap').reset();
+            bootstrap.Modal.getInstance(document.getElementById('addRekapModal')).hide();
+            alert('✅ Data transaksi manual berhasil masuk ke Cloud!');
+        }
+
+        async function deleteRekapRow(index, docId) {
             if(confirm('Hapus baris ini dari rekapan?')) {
                 rekapPenjualan.splice(index, 1);
-                renderRekap();
+                renderRekapUI();
+
+                if (docId && window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                    try {
+                        await window.dbDeleteDoc(window.dbDoc(window.db, "rekap_penjualan", docId));
+                    } catch(err) {
+                        console.error("Gagal hapus rekap cloud:", err);
+                    }
+                }
             }
         }
 
         function clearRekap() {
             if(confirm('⚠️ Hapus seluruh data rekapan penjualan?')) {
                 rekapPenjualan = [];
-                renderRekap();
+                renderRekapUI();
             }
         }
 
@@ -1089,7 +1241,7 @@ Nomor bill berikutnya: ${prefix}${String(currentBillNum).padStart(3, '0')}`);
                 for(let i=1; i<lines.length; i++) {
                     const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
                     if(cols.length >= 10 && cols[0] !== '') {
-                        rekapPenjualan.push({
+                        const rObj = {
                             noBill: cols[0],
                             tanggal: cols[1],
                             roomGuest: cols[2],
@@ -1102,12 +1254,17 @@ Nomor bill berikutnya: ${prefix}${String(currentBillNum).padStart(3, '0')}`);
                             serviceCharge: parseInt(cols[9]) || 0,
                             pajak: parseInt(cols[10]) || 0,
                             grandTotal: parseInt(cols[11]) || 0
-                        });
+                        };
+                        rekapPenjualan.push(rObj);
+
+                        if (window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                            window.dbAddDoc(window.dbCollection(window.db, "rekap_penjualan"), rObj);
+                        }
                         count++;
                     }
                 }
-                renderRekap();
-                alert(`✅ Berhasil mengimpor ${count} data rekapan!`);
+                renderRekapUI();
+                alert(`✅ Berhasil mengimpor ${count} data rekapan ke Cloud!`);
                 inputEl.value = '';
             };
             reader.readAsText(file);
@@ -1115,7 +1272,7 @@ Nomor bill berikutnya: ${prefix}${String(currentBillNum).padStart(3, '0')}`);
 
         function downloadCSV(csvContent, filename) {
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.getElementById("downloadLinkAnchor") || document.createElement("a");
+            const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.setAttribute("download", filename);
             document.body.appendChild(link);
