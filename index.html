@@ -3,122 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Kasir & Rekap Penjualan</title>
+    <title>Aplikasi POS Kasir Pro - Room Service & Restaurant</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
-        .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .bill-header { background: #1f4e78; color: white; border-radius: 12px 12px 0 0; padding: 15px; }
-        .table-custom th { background-color: #f1f5f9; color: #475569; font-weight: 600; }
-        .summary-box { background-color: #e2efda; border-radius: 8px; padding: 15px; }
+        .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
         .btn-primary { background-color: #1f4e78; border-color: #1f4e78; }
         .btn-primary:hover { background-color: #163754; }
+
+        /* Exact Bill Replica Box Styling */
+        .bill-paper {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 30px 40px;
+            max-width: 650px;
+            margin: 0 auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000;
+        }
+
+        .bill-logo-img {
+            max-height: 70px;
+            max-width: 220px;
+            object-fit: contain;
+        }
+
+        .highlight-yellow {
+            background-color: #ffff00;
+            font-weight: bold;
+            padding: 2px 12px;
+            border-radius: 2px;
+            display: inline-block;
+            min-width: 90px;
+            text-align: center;
+        }
+
+        .bill-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .bill-table th {
+            padding: 8px 4px;
+            font-weight: bold;
+            border-bottom: 1px solid #eee;
+        }
+
+        .bill-table td {
+            padding: 6px 4px;
+            vertical-align: middle;
+        }
+
+        .summary-label {
+            text-align: right;
+            padding-right: 25px;
+            font-weight: normal;
+        }
+
+        .summary-amount {
+            text-align: right;
+            font-weight: normal;
+        }
+
+        .summary-total {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .logo-preview-box {
+            width: 120px;
+            height: 80px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-color: #fff;
+        }
+        .logo-preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        /* Hidden Print Template by Default */
+        #printAreaOnly { display: none; }
+
+        /* PRINT SPECIFIC STYLES - SOLVES ALL PRINT ISSUES */
         @media print {
-            .no-print { display: none !important; }
-            .card { box-shadow: none; border: none; }
-            body { background: white; }
+            body * {
+                visibility: hidden !important;
+            }
+            #printAreaOnly, #printAreaOnly * {
+                visibility: visible !important;
+            }
+            #printAreaOnly {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                background: white !important;
+            }
+            .highlight-yellow {
+                background-color: #ffff00 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- Navbar -->
+    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark no-print">
         <div class="container-fluid px-4">
-            <a class="navbar-brand" href="#"><i class="bi bi-receipt-cutoff me-2"></i>POS Kasir Web</a>
-            <div class="navbar-nav ms-auto">
-                <button class="btn btn-outline-light btn-sm me-2" onclick="showTab('billTab')"><i class="bi bi-cart3"></i> Kasir / Bill</button>
-                <button class="btn btn-outline-light btn-sm me-2" onclick="showTab('itemsTab')"><i class="bi bi-box-seam"></i> Master Barang</button>
-                <button class="btn btn-outline-light btn-sm" onclick="showTab('rekapTab')"><i class="bi bi-journal-text"></i> Rekap Penjualan</button>
+            <a class="navbar-brand" href="#"><i class="bi bi-receipt-cutoff me-2"></i>POS Kasir Pro - Hotel & Restaurant</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav ms-auto">
+                    <button class="btn btn-outline-light btn-sm me-2 my-1" onclick="showTab('billTab')"><i class="bi bi-cart3"></i> Kasir / Bill</button>
+                    <button class="btn btn-outline-light btn-sm me-2 my-1" onclick="showTab('itemsTab')"><i class="bi bi-box-seam"></i> Database Barang</button>
+                    <button class="btn btn-outline-light btn-sm me-2 my-1" onclick="showTab('rekapTab')"><i class="bi bi-journal-text"></i> Rekap Penjualan</button>
+                    <button class="btn btn-outline-light btn-sm my-1" onclick="showTab('settingsTab')"><i class="bi bi-gear"></i> Pengaturan Bill & Logo</button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container my-4">
+    <div class="container my-4 no-print">
 
-        <!-- TAB 1: KASIR / BILL -->
+        <!-- TAB 1: KASIR / BILL FORM -->
         <div id="billTab" class="tab-page">
             <div class="row">
-                <div class="col-lg-8">
-                    <div class="card mb-4">
-                        <div class="bill-header d-flex justify-content-between align-items-center">
-                            <h4 class="m-0"><i class="bi bi-receipt"></i> BILL PENJUALAN</h4>
-                            <span class="badge bg-light text-dark fs-6" id="displayNoNota">INV-001</span>
+                <!-- Left Side: Interactive Bill Preview & Form -->
+                <div class="col-lg-8 mb-4">
+                    <div class="bill-paper">
+                        
+                        <!-- Header Logo & Subtitle -->
+                        <div class="text-center mb-3">
+                            <div id="billLogoContainer">
+                                <h3 class="fw-bold m-0" style="color: #b8860b;">NOORMANS</h3>
+                                <small class="text-muted tracking-widest" style="letter-spacing: 3px;">HOTEL SEMARANG</small>
+                            </div>
+                            <h4 class="fw-bold mt-3 mb-4 text-uppercase" id="billCategoryTitle">ROOM SERVICE</h4>
                         </div>
-                        <div class="card-body p-4">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-bold">Tanggal</label>
-                                    <input type="date" id="billTanggal" class="form-control">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted fw-bold">Nama Pelanggan</label>
-                                    <input type="text" id="billPelanggan" class="form-control" value="Pelanggan Umum">
+
+                        <!-- Date/Time, No Bill, Room No Header Row -->
+                        <div class="row align-items-center mb-2">
+                            <div class="col-7">
+                                <input type="text" id="billDateTimeInput" class="form-control form-control-sm border-0 bg-transparent p-0 fw-bold" style="font-size: 1rem;">
+                            </div>
+                            <div class="col-5 text-end fs-6">
+                                <span class="me-2">No. Bill</span>
+                                <span class="highlight-yellow" id="billNoDisplay">RS-005</span>
+                            </div>
+                        </div>
+
+                        <div class="row align-items-center mb-4">
+                            <div class="col-12 d-flex align-items-center">
+                                <span class="fs-6 me-3">Room No.</span>
+                                <input type="text" id="inputRoomNo" class="highlight-yellow border-0 text-center" style="outline: none; width: 140px;" value="101">
+                            </div>
+                        </div>
+
+                        <!-- Table Items List -->
+                        <table class="bill-table" id="billTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 45%;">Nama Item</th>
+                                    <th style="width: 15%; text-align: center;">Qty</th>
+                                    <th style="width: 20%; text-align: right;">Harga</th>
+                                    <th style="width: 20%; text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billItemsBody">
+                                <!-- Dynamic Item Rows -->
+                            </tbody>
+                        </table>
+
+                        <div class="text-start mt-2 mb-4">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="addBillRow()"><i class="bi bi-plus-lg"></i> Tambah Item</button>
+                        </div>
+
+                        <!-- Summary Calculation Section -->
+                        <div class="mt-4 pt-2">
+                            <div class="row py-1">
+                                <div class="col-7 summary-label">Subtotal</div>
+                                <div class="col-5 summary-amount" id="dispSubtotal">Rp0</div>
+                            </div>
+
+                            <div class="row py-1 align-items-center">
+                                <div class="col-7 summary-label">Discount</div>
+                                <div class="col-5 summary-amount d-flex justify-content-end align-items-center">
+                                    <input type="number" id="inputDiscount" class="form-control form-control-sm text-end me-2" style="width: 100px;" value="0" min="0" oninput="calculateTotal()">
+                                    <span id="dispDiscount">Rp0</span>
                                 </div>
                             </div>
 
-                            <hr>
-
-                            <!-- Table Items -->
-                            <div class="table-responsive">
-                                <table class="table table-custom align-middle" id="billTable">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 35%;">Pilih Barang</th>
-                                            <th style="width: 20%;">Harga</th>
-                                            <th style="width: 15%;">Qty</th>
-                                            <th style="width: 20%;">Subtotal</th>
-                                            <th style="width: 10%;" class="no-print">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="billBody">
-                                        <!-- Rows added dynamically -->
-                                    </tbody>
-                                </table>
+                            <div class="row py-1">
+                                <div class="col-7 summary-label">SERVICE CHARGE</div>
+                                <div class="col-5 summary-amount" id="dispService">Rp0</div>
                             </div>
-                            <button class="btn btn-outline-secondary btn-sm no-print" onclick="addBillRow()"><i class="bi bi-plus-lg"></i> Tambah Baris</button>
+
+                            <div class="row py-1">
+                                <div class="col-7 summary-label">GOVERNMENT TAX</div>
+                                <div class="col-5 summary-amount" id="dispTax">Rp0</div>
+                            </div>
+
+                            <div class="row py-2 mt-1 fw-bold fs-5">
+                                <div class="col-7 summary-label summary-total">TOTAL</div>
+                                <div class="col-5 summary-amount summary-total" id="dispGrandTotal">Rp0</div>
+                            </div>
                         </div>
+
                     </div>
                 </div>
 
-                <!-- Summary / Checkout Panel -->
+                <!-- Right Side: Action Panel & Payment Details -->
                 <div class="col-lg-4">
                     <div class="card">
                         <div class="card-body p-4">
-                            <h5 class="fw-bold mb-3">Ringkasan Pembayaran</h5>
+                            <h5 class="fw-bold mb-3"><i class="bi bi-wallet2 me-2"></i>Pembayaran</h5>
                             
-                            <div class="d-flex justify-content-between mb-2 fs-6">
-                                <span class="text-muted">Total Belanja:</span>
-                                <span class="fw-bold" id="textTotal">Rp 0</span>
-                            </div>
-
                             <div class="mb-3">
-                                <label class="form-label text-muted">Diskon (Rp)</label>
-                                <input type="number" id="inputDiskon" class="form-control" value="0" min="0" oninput="calculateBill()">
-                            </div>
-
-                            <div class="summary-box mb-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-success">Grand Total:</span>
-                                    <span class="fs-4 fw-bold text-success" id="textGrandTotal">Rp 0</span>
-                                </div>
+                                <label class="form-label text-muted">Nama Pelanggan / Tamu</label>
+                                <input type="text" id="inputGuestName" class="form-control" value="Tamu Hotel">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label text-muted">Jumlah Bayar (Rp)</label>
-                                <input type="number" id="inputBayar" class="form-control" placeholder="0" min="0" oninput="calculateBill()">
+                                <input type="number" id="inputPayment" class="form-control form-control-lg" placeholder="0" min="0" oninput="calculateTotal()">
                             </div>
 
                             <div class="d-flex justify-content-between mb-4 fs-6">
                                 <span class="text-muted">Kembalian:</span>
-                                <span class="fw-bold text-primary" id="textKembalian">Rp 0</span>
+                                <span class="fw-bold text-primary" id="dispChange">Rp0</span>
                             </div>
 
-                            <div class="d-grid gap-2 no-print">
-                                <button class="btn btn-primary btn-lg" onclick="simpanTransaksi()"><i class="bi bi-check-circle-fill me-2"></i>SIMPAN TRANSAKSI</button>
-                                <button class="btn btn-outline-dark" onclick="window.print()"><i class="bi bi-printer me-2"></i>Cetak Bill</button>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary btn-lg" onclick="saveTransaction()"><i class="bi bi-check-circle-fill me-2"></i>SIMPAN TRANSAKSI</button>
+                                <button class="btn btn-outline-dark btn-lg" onclick="cetakBillSempurna()"><i class="bi bi-printer me-2"></i>CETAK BILL</button>
                             </div>
                         </div>
                     </div>
@@ -126,28 +257,36 @@
             </div>
         </div>
 
-        <!-- TAB 2: MASTER BARANG -->
+        <!-- TAB 2: DATABASE MASTER BARANG -->
         <div id="itemsTab" class="tab-page" style="display: none;">
             <div class="card">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="m-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Daftar Master Barang</h5>
-                    <button class="btn btn-primary btn-sm" onclick="showAddItemModal()"><i class="bi bi-plus-lg"></i> Tambah Barang</button>
+                <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h5 class="m-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Database Master Barang</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal"><i class="bi bi-plus-circle me-1"></i> Input Barang Baru</button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('importItemsFile').click()"><i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV</button>
+                        <input type="file" id="importItemsFile" accept=".csv" style="display:none;" onchange="importItemsCSV(this)">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="exportItemsCSV()"><i class="bi bi-file-earmark-arrow-down me-1"></i> Export CSV</button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr>
-                                <th>Kode Barang</th>
-                                <th>Nama Barang</th>
-                                <th>Satuan</th>
-                                <th>Harga Satuan</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="itemsBody">
-                            <!-- Items populated dynamically -->
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Kode Barang</th>
+                                    <th>Nama Barang</th>
+                                    <th>Kategori</th>
+                                    <th>Satuan</th>
+                                    <th>Harga Satuan</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsMasterTableBody">
+                                <!-- Master Items populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -155,11 +294,14 @@
         <!-- TAB 3: REKAP PENJUALAN -->
         <div id="rekapTab" class="tab-page" style="display: none;">
             <div class="card">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <h5 class="m-0 fw-bold"><i class="bi bi-journal-text me-2"></i>Rekapitulasi Penjualan</h5>
-                    <div>
-                        <button class="btn btn-outline-success btn-sm me-2" onclick="exportToCSV()"><i class="bi bi-file-earmark-excel"></i> Export Excel (CSV)</button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="clearRekap()"><i class="bi bi-trash"></i> Hapus Semua Rekap</button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addRekapModal"><i class="bi bi-plus-circle me-1"></i> Input Rekap Manual</button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('importRekapFile').click()"><i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV</button>
+                        <input type="file" id="importRekapFile" accept=".csv" style="display:none;" onchange="importRekapCSV(this)">
+                        <button class="btn btn-outline-success btn-sm" onclick="exportRekapCSV()"><i class="bi bi-file-earmark-excel me-1"></i> Export CSV/Excel</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="clearRekap()"><i class="bi bi-trash me-1"></i> Hapus Semua</button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -167,19 +309,22 @@
                         <table class="table table-striped align-middle">
                             <thead>
                                 <tr>
-                                    <th>No. Nota</th>
-                                    <th>Tanggal</th>
-                                    <th>Pelanggan</th>
+                                    <th>No. Bill</th>
+                                    <th>Tanggal & Waktu</th>
+                                    <th>Room No / Tamu</th>
                                     <th>Kode</th>
-                                    <th>Nama Barang</th>
+                                    <th>Nama Item</th>
                                     <th>Harga</th>
                                     <th>Qty</th>
                                     <th>Subtotal</th>
-                                    <th>Diskon</th>
-                                    <th>Grand Total</th>
+                                    <th>Discount</th>
+                                    <th>Service Charge</th>
+                                    <th>Gov Tax</th>
+                                    <th>Total</th>
+                                    <th class="text-center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="rekapBody">
+                            <tbody id="rekapTableBody">
                                 <!-- Rekap entries dynamically populated -->
                             </tbody>
                         </table>
@@ -188,42 +333,290 @@
             </div>
         </div>
 
+        <!-- TAB 4: PENGATURAN BENTUK BILL, LOGO & TAX RATE -->
+        <div id="settingsTab" class="tab-page" style="display: none;">
+            <div class="card">
+                <div class="card-header bg-white py-3">
+                    <h5 class="m-0 fw-bold"><i class="bi bi-gear me-2"></i>Pengaturan Komposisi Bill, Logo & Tarif Pajak</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form id="settingsForm" onsubmit="saveSettings(event)">
+                        <div class="row g-3">
+                            <!-- Logo Upload Section -->
+                            <div class="col-md-12 mb-2">
+                                <label class="form-label fw-bold">Logo Usaha / Hotel (Tampil di Atas Struk/Bill)</label>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="logo-preview-box" id="settingLogoPreview">
+                                        <small class="text-muted text-center p-1">Logo Default</small>
+                                    </div>
+                                    <div>
+                                        <input type="file" id="inputLogoFile" accept="image/*" class="form-control mb-2" onchange="previewUploadLogo(this)">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearUploadedLogo()"><i class="bi bi-trash"></i> Reset ke Default</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Judul Layanan / Lay out Bill</label>
+                                <input type="text" id="settingBillTitle" class="form-control" value="ROOM SERVICE">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Prefix / Awalan No. Bill</label>
+                                <input type="text" id="settingPrefixBill" class="form-control" value="RS-">
+                            </div>
+
+                            <hr class="my-4">
+                            <h6 class="fw-bold text-primary">Biaya Tambahan & Pajak (Service Charge & Government Tax)</h6>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">SERVICE CHARGE (%)</label>
+                                <input type="number" id="settingServiceRate" class="form-control" value="5" min="0" step="0.1">
+                                <small class="text-muted">Tarif biaya pelayanan (default 5%)</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">GOVERNMENT TAX (%)</label>
+                                <input type="number" id="settingTaxRate" class="form-control" value="10" min="0" step="0.1">
+                                <small class="text-muted">Tarif pajak pemerintah PB1/VAT (default 10%)</small>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Simpan Pengaturan</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Script Logic -->
-    <script>
-        // Storage Keys
-        const STORAGE_ITEMS = 'pos_items';
-        const STORAGE_REKAP = 'pos_rekap';
-        const STORAGE_NOTA = 'pos_last_nota';
+    <!-- AREA CETAK KHUSUS (CLEAN PRINT CONTAINER) -->
+    <div id="printAreaOnly">
+        <div class="bill-paper">
+            <div class="text-center mb-3">
+                <div id="pLogoContainer"></div>
+                <h4 class="fw-bold mt-3 mb-4 text-uppercase" id="pCategoryTitle">ROOM SERVICE</h4>
+            </div>
 
-        // Initial Sample Data
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="font-weight: bold;" id="pDateTime">01/08/2026 6:07:46</div>
+                <div>No. Bill <span class="highlight-yellow" id="pNoBill">RS-005</span></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                Room No. <span class="highlight-yellow" id="pRoomNo">101</span>
+            </div>
+
+            <table class="bill-table">
+                <thead>
+                    <tr>
+                        <th style="width: 45%; text-align: left;">Nama Item</th>
+                        <th style="width: 15%; text-align: center;">Qty</th>
+                        <th style="width: 20%; text-align: right;">Harga</th>
+                        <th style="width: 20%; text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="pItemsBody">
+                    <!-- Printed clean rows -->
+                </tbody>
+            </table>
+
+            <div style="margin-top: 25px; border-top: 1px solid #f0f0f0; padding-top: 10px;">
+                <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+                    <span class="summary-label" style="flex:1;">Subtotal</span>
+                    <span id="pSubtotal" style="width: 120px; text-align: right;">Rp0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+                    <span class="summary-label" style="flex:1;">Discount</span>
+                    <span id="pDiscount" style="width: 120px; text-align: right;">Rp0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+                    <span class="summary-label" style="flex:1;">SERVICE CHARGE</span>
+                    <span id="pService" style="width: 120px; text-align: right;">Rp0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 3px 0;">
+                    <span class="summary-label" style="flex:1;">GOVERNMENT TAX</span>
+                    <span id="pTax" style="width: 120px; text-align: right;">Rp0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; font-size: 1.1rem; border-top: 1px dashed #ccc; margin-top: 5px;">
+                    <span class="summary-label" style="flex:1;">TOTAL</span>
+                    <span id="pGrandTotal" style="width: 120px; text-align: right;">Rp0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: INPUT BARANG BARU MASTER -->
+    <div class="modal fade" id="addItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Tambah Barang Baru ke Master</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formAddItem" onsubmit="submitAddItem(event)">
+                        <div class="mb-3">
+                            <label class="form-label">Kode Barang</label>
+                            <input type="text" id="modalKodeBarang" class="form-control" placeholder="RS-101" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nama Item / Menu</label>
+                            <input type="text" id="modalNamaBarang" class="form-control" placeholder="Club Sandwich" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Kategori</label>
+                            <input type="text" id="modalKategoriBarang" class="form-control" value="Food & Beverage">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Satuan</label>
+                            <input type="text" id="modalSatuanBarang" class="form-control" value="Porsi" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Harga Satuan (Rp)</label>
+                            <input type="number" id="modalHargaBarang" class="form-control" placeholder="45000" min="0" required>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan Barang</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: INPUT REKAP MANUAL -->
+    <div class="modal fade" id="addRekapModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Input Rekap Transaksi Manual</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formAddRekap" onsubmit="submitAddRekap(event)">
+                        <div class="row g-2">
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">No. Bill</label>
+                                <input type="text" id="rekapModalNoBill" class="form-control" value="RS-000" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Tanggal & Jam</label>
+                                <input type="text" id="rekapModalTanggal" class="form-control" placeholder="01/08/2026 6:07:46" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Room No / Tamu</label>
+                                <input type="text" id="rekapModalRoom" class="form-control" value="Room 101">
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Kode Item</label>
+                                <input type="text" id="rekapModalKode" class="form-control" placeholder="RS-101">
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Nama Item</label>
+                                <input type="text" id="rekapModalNama" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Harga (Rp)</label>
+                                <input type="number" id="rekapModalHarga" class="form-control" min="0" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Qty</label>
+                                <input type="number" id="rekapModalQty" class="form-control" value="1" min="1" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label">Discount (Rp)</label>
+                                <input type="number" id="rekapModalDiscount" class="form-control" value="0" min="0">
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan ke Rekap</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script Application Logic -->
+    <script>
+        const STORAGE_ITEMS = 'pos_hotel_items_v2';
+        const STORAGE_REKAP = 'pos_hotel_rekap_v2';
+        const STORAGE_NOTA = 'pos_hotel_last_nota_v2';
+        const STORAGE_SETTINGS = 'pos_hotel_settings_v2';
+
         let masterItems = JSON.parse(localStorage.getItem(STORAGE_ITEMS)) || [
-            { kode: 'BRG-001', nama: 'Kopi Susu Gula Aren', satuan: 'Pcs', harga: 18000 },
-            { kode: 'BRG-002', nama: 'Roti Bakar Coklat Keju', satuan: 'Pcs', harga: 15000 },
-            { kode: 'BRG-003', nama: 'Es Teh Manis Jumbo', satuan: 'Pcs', harga: 5000 },
-            { kode: 'BRG-004', nama: 'Nasi Goreng Spesial', satuan: 'Porsi', harga: 22000 }
+            { kode: 'RS-001', nama: 'Nasi Goreng Hotel', kategori: 'F&B', satuan: 'Porsi', harga: 45000 },
+            { kode: 'RS-002', nama: 'Club Sandwich', kategori: 'F&B', satuan: 'Porsi', harga: 50000 },
+            { kode: 'RS-003', nama: 'Fresh Orange Juice', kategori: 'F&B', satuan: 'Gelas', harga: 25000 },
+            { kode: 'RS-004', nama: 'Hot Americano Coffee', kategori: 'F&B', satuan: 'Cangkir', harga: 30000 },
+            { kode: 'RS-005', nama: 'Chicken Steak Hotplate', kategori: 'F&B', satuan: 'Porsi', harga: 65000 }
         ];
 
         let rekapPenjualan = JSON.parse(localStorage.getItem(STORAGE_REKAP)) || [];
-        let currentNotaNum = parseInt(localStorage.getItem(STORAGE_NOTA)) || 1;
+        let currentBillNum = parseInt(localStorage.getItem(STORAGE_NOTA)) || 5;
 
-        // Initialize App
+        let appSettings = JSON.parse(localStorage.getItem(STORAGE_SETTINGS)) || {
+            billTitle: 'ROOM SERVICE',
+            prefixBill: 'RS-',
+            serviceRate: 5,
+            taxRate: 10,
+            logoBase64: ''
+        };
+
+        let tempLogoBase64 = appSettings.logoBase64 || '';
+
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('billTanggal').valueAsDate = new Date();
-            updateNotaDisplay();
+            updateLiveDateTime();
+            loadSettingsToForm();
+            updateBillHeaderDisplay();
             renderMasterItems();
             renderRekap();
-            initBillRows();
+            initBillRows(7);
         });
 
-        function formatRp(val) {
-            return 'Rp ' + Number(val).toLocaleString('id-ID');
+        function formatDateTimeNow() {
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            const hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
         }
 
-        function updateNotaDisplay() {
-            const notaStr = 'INV-' + String(currentNotaNum).padStart(3, '0');
-            document.getElementById('displayNoNota').innerText = notaStr;
+        function updateLiveDateTime() {
+            document.getElementById('billDateTimeInput').value = formatDateTimeNow();
+        }
+
+        function formatRpExact(val) {
+            return 'Rp' + Number(val || 0).toLocaleString('id-ID');
+        }
+
+        function updateBillHeaderDisplay() {
+            const prefix = appSettings.prefixBill || 'RS-';
+            const billStr = prefix + String(currentBillNum).padStart(3, '0');
+            document.getElementById('billNoDisplay').innerText = billStr;
+            document.getElementById('billCategoryTitle').innerText = appSettings.billTitle || 'ROOM SERVICE';
+
+            const logoContainer = document.getElementById('billLogoContainer');
+            if(appSettings.logoBase64) {
+                logoContainer.innerHTML = `<img src="${appSettings.logoBase64}" class="bill-logo-img" alt="Logo">`;
+            } else {
+                logoContainer.innerHTML = `
+                    <h3 class="fw-bold m-0" style="color: #b8860b;">NOORMANS</h3>
+                    <small class="text-muted tracking-widest" style="letter-spacing: 3px;">HOTEL SEMARANG</small>
+                `;
+            }
         }
 
         function showTab(tabId) {
@@ -231,149 +624,329 @@
             document.getElementById(tabId).style.display = 'block';
         }
 
+        // --- SETTINGS LOGIC ---
+        function loadSettingsToForm() {
+            document.getElementById('settingBillTitle').value = appSettings.billTitle;
+            document.getElementById('settingPrefixBill').value = appSettings.prefixBill;
+            document.getElementById('settingServiceRate').value = appSettings.serviceRate ?? 5;
+            document.getElementById('settingTaxRate').value = appSettings.taxRate ?? 10;
+
+            tempLogoBase64 = appSettings.logoBase64 || '';
+            renderLogoPreview(tempLogoBase64);
+        }
+
+        function previewUploadLogo(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                tempLogoBase64 = e.target.result;
+                renderLogoPreview(tempLogoBase64);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearUploadedLogo() {
+            tempLogoBase64 = '';
+            document.getElementById('inputLogoFile').value = '';
+            renderLogoPreview('');
+        }
+
+        function renderLogoPreview(base64Data) {
+            const previewBox = document.getElementById('settingLogoPreview');
+            if(base64Data) {
+                previewBox.innerHTML = `<img src="${base64Data}" alt="Logo">`;
+            } else {
+                previewBox.innerHTML = `<small class="text-muted text-center p-1">Default Logo</small>`;
+            }
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            appSettings = {
+                billTitle: document.getElementById('settingBillTitle').value,
+                prefixBill: document.getElementById('settingPrefixBill').value,
+                serviceRate: parseFloat(document.getElementById('settingServiceRate').value) || 0,
+                taxRate: parseFloat(document.getElementById('settingTaxRate').value) || 0,
+                logoBase64: tempLogoBase64
+            };
+            localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(appSettings));
+            updateBillHeaderDisplay();
+            calculateTotal();
+            alert('✅ Pengaturan layout bill, logo & tarif pajak berhasil disimpan!');
+        }
+
         // --- MASTER BARANG LOGIC ---
         function renderMasterItems() {
-            const body = document.getElementById('itemsBody');
+            const body = document.getElementById('itemsMasterTableBody');
             body.innerHTML = '';
             masterItems.forEach((item, index) => {
                 body.innerHTML += `
                     <tr>
                         <td><span class="badge bg-secondary">${item.kode}</span></td>
                         <td class="fw-bold">${item.nama}</td>
+                        <td>${item.kategori || 'F&B'}</td>
                         <td>${item.satuan}</td>
-                        <td>${formatRp(item.harga)}</td>
+                        <td>${formatRpExact(item.harga)}</td>
                         <td class="text-center">
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteItem(${index})"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteMasterItem(${index})"><i class="bi bi-trash"></i></button>
                         </td>
                     </tr>
                 `;
             });
             localStorage.setItem(STORAGE_ITEMS, JSON.stringify(masterItems));
+            updateBillRowSelects();
         }
 
-        function showAddItemModal() {
-            const kode = prompt('Masukkan Kode Barang (contoh: BRG-005):');
-            if(!kode) return;
-            const nama = prompt('Masukkan Nama Barang:');
-            if(!nama) return;
-            const satuan = prompt('Masukkan Satuan (misal: Pcs/Porsi):', 'Pcs');
-            const harga = parseInt(prompt('Masukkan Harga Satuan (Angka):', '10000'));
-            
-            if(kode && nama && !isNaN(harga)) {
-                masterItems.push({ kode, nama, satuan, harga });
-                renderMasterItems();
-                updateBillSelects();
-            }
+        function submitAddItem(e) {
+            e.preventDefault();
+            const kode = document.getElementById('modalKodeBarang').value.trim();
+            const nama = document.getElementById('modalNamaBarang').value.trim();
+            const kategori = document.getElementById('modalKategoriBarang').value.trim();
+            const satuan = document.getElementById('modalSatuanBarang').value.trim();
+            const harga = parseInt(document.getElementById('modalHargaBarang').value);
+
+            masterItems.push({ kode, nama, kategori, satuan, harga });
+            renderMasterItems();
+
+            document.getElementById('formAddItem').reset();
+            bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide();
+            alert('✅ Barang berhasil ditambahkan ke database master!');
         }
 
-        function deleteItem(index) {
-            if(confirm('Hapus barang ini dari daftar master?')) {
+        function deleteMasterItem(index) {
+            if(confirm('Hapus barang ini dari database master?')) {
                 masterItems.splice(index, 1);
                 renderMasterItems();
-                updateBillSelects();
             }
         }
 
-        // --- KASIR / BILL LOGIC ---
-        function initBillRows() {
-            const body = document.getElementById('billBody');
+        function exportItemsCSV() {
+            let csv = 'Kode Barang,Nama Barang,Kategori,Satuan,Harga Satuan\n';
+            masterItems.forEach(item => {
+                csv += `"${item.kode}","${item.nama}","${item.kategori || 'F&B'}","${item.satuan}",${item.harga}\n`;
+            });
+            downloadCSV(csv, `Master_Barang_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function importItemsCSV(inputEl) {
+            const file = inputEl.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                let addedCount = 0;
+                for(let i=1; i<lines.length; i++) {
+                    const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
+                    if(cols.length >= 4 && cols[0] !== '') {
+                        masterItems.push({
+                            kode: cols[0],
+                            nama: cols[1],
+                            kategori: cols[2] || 'F&B',
+                            satuan: cols[3] || 'Pcs',
+                            harga: parseInt(cols[4] || cols[3]) || 0
+                        });
+                        addedCount++;
+                    }
+                }
+                renderMasterItems();
+                alert(`✅ Berhasil mengimpor ${addedCount} data barang!`);
+                inputEl.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        // --- KASIR & BILL LOGIC ---
+        function initBillRows(rowCount = 7) {
+            const body = document.getElementById('billItemsBody');
             body.innerHTML = '';
-            for(let i=0; i<3; i++) {
+            for(let i=0; i<rowCount; i++) {
                 addBillRow();
             }
         }
 
         function addBillRow() {
-            const body = document.getElementById('billBody');
+            const body = document.getElementById('billItemsBody');
             const rowIdx = body.children.length;
-            
-            let optionsHtml = '<option value="">-- Pilih Barang --</option>';
+
+            let optionsHtml = '<option value="">-- Pilih Item --</option>';
             masterItems.forEach(item => {
-                optionsHtml += `<option value="${item.kode}">${item.nama} (${formatRp(item.harga)})</option>`;
+                optionsHtml += `<option value="${item.kode}">${item.nama}</option>`;
             });
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
-                    <select class="form-select item-select" onchange="onBarangSelect(this, ${rowIdx})">
+                    <select class="form-select form-select-sm border-0 item-select" onchange="onItemSelectRow(this)">
                         ${optionsHtml}
                     </select>
                 </td>
-                <td><input type="text" class="form-control item-harga" readonly value="Rp 0"></td>
-                <td><input type="number" class="form-control item-qty" value="0" min="0" oninput="calculateBill()"></td>
-                <td><input type="text" class="form-control item-subtotal" readonly value="Rp 0"></td>
-                <td class="no-print"><button class="btn btn-outline-danger btn-sm" onclick="this.closest('tr').remove(); calculateBill();"><i class="bi bi-x-lg"></i></button></td>
+                <td style="text-align: center;">
+                    <input type="number" class="form-control form-control-sm border-0 text-center item-qty" value="0" min="0" style="width: 60px; margin: 0 auto;" oninput="calculateTotal()">
+                </td>
+                <td style="text-align: right;">
+                    <span class="item-price-disp">Rp0</span>
+                    <input type="hidden" class="item-price-raw" value="0">
+                </td>
+                <td style="text-align: right;">
+                    <span class="item-total-disp fw-bold">Rp0</span>
+                </td>
             `;
             body.appendChild(tr);
         }
 
-        function updateBillSelects() {
+        function updateBillRowSelects() {
             document.querySelectorAll('.item-select').forEach(select => {
                 const selectedVal = select.value;
-                let optionsHtml = '<option value="">-- Pilih Barang --</option>';
+                let optionsHtml = '<option value="">-- Pilih Item --</option>';
                 masterItems.forEach(item => {
-                    optionsHtml += `<option value="${item.kode}">${item.nama} (${formatRp(item.harga)})</option>`;
+                    optionsHtml += `<option value="${item.kode}">${item.nama}</option>`;
                 });
                 select.innerHTML = optionsHtml;
                 select.value = selectedVal;
             });
         }
 
-        function onBarangSelect(selectEl, rowIdx) {
+        function onItemSelectRow(selectEl) {
             const tr = selectEl.closest('tr');
             const kode = selectEl.value;
             const item = masterItems.find(i => i.kode === kode);
-            
+
             if(item) {
-                tr.querySelector('.item-harga').dataset.raw = item.harga;
-                tr.querySelector('.item-harga').value = formatRp(item.harga);
+                tr.querySelector('.item-price-raw').value = item.harga;
+                tr.querySelector('.item-price-disp').innerText = formatRpExact(item.harga);
                 if(parseInt(tr.querySelector('.item-qty').value) === 0) {
                     tr.querySelector('.item-qty').value = 1;
                 }
             } else {
-                tr.querySelector('.item-harga').dataset.raw = 0;
-                tr.querySelector('.item-harga').value = 'Rp 0';
+                tr.querySelector('.item-price-raw').value = 0;
+                tr.querySelector('.item-price-disp').innerText = 'Rp0';
                 tr.querySelector('.item-qty').value = 0;
             }
-            calculateBill();
+            calculateTotal();
         }
 
-        function calculateBill() {
-            let total = 0;
-            document.querySelectorAll('#billBody tr').forEach(tr => {
-                const harga = parseInt(tr.querySelector('.item-harga')?.dataset.raw || 0);
+        function calculateTotal() {
+            let subtotal = 0;
+            document.querySelectorAll('#billItemsBody tr').forEach(tr => {
+                const harga = parseInt(tr.querySelector('.item-price-raw')?.value || 0);
                 const qty = parseInt(tr.querySelector('.item-qty')?.value || 0);
-                const subtotal = harga * qty;
-                tr.querySelector('.item-subtotal').value = formatRp(subtotal);
-                total += subtotal;
+                const lineTotal = harga * qty;
+
+                tr.querySelector('.item-total-disp').innerText = formatRpExact(lineTotal);
+                subtotal += lineTotal;
             });
 
-            const diskon = parseInt(document.getElementById('inputDiskon').value) || 0;
-            const grandTotal = Math.max(0, total - diskon);
-            const bayar = parseInt(document.getElementById('inputBayar').value) || 0;
-            const kembalian = Math.max(0, bayar - grandTotal);
+            const discount = parseInt(document.getElementById('inputDiscount').value) || 0;
+            const afterDiscount = Math.max(0, subtotal - discount);
 
-            document.getElementById('textTotal').innerText = formatRp(total);
-            document.getElementById('textGrandTotal').innerText = formatRp(grandTotal);
-            document.getElementById('textKembalian').innerText = formatRp(kembalian);
+            const serviceRate = parseFloat(appSettings.serviceRate || 0);
+            const taxRate = parseFloat(appSettings.taxRate || 0);
 
-            return { total, diskon, grandTotal, bayar };
+            const serviceChargeVal = Math.round(afterDiscount * (serviceRate / 100));
+            const taxVal = Math.round((afterDiscount + serviceChargeVal) * (taxRate / 100));
+
+            const grandTotal = afterDiscount + serviceChargeVal + taxVal;
+            const payment = parseInt(document.getElementById('inputPayment').value) || 0;
+            const change = Math.max(0, payment - grandTotal);
+
+            document.getElementById('dispSubtotal').innerText = formatRpExact(subtotal);
+            document.getElementById('dispDiscount').innerText = formatRpExact(discount);
+            document.getElementById('dispService').innerText = formatRpExact(serviceChargeVal);
+            document.getElementById('dispTax').innerText = formatRpExact(taxVal);
+            document.getElementById('dispGrandTotal').innerText = formatRpExact(grandTotal);
+            document.getElementById('dispChange').innerText = formatRpExact(change);
+
+            return { subtotal, discount, serviceChargeVal, taxVal, grandTotal, payment, change };
         }
 
-        function simpanTransaksi() {
-            const { total, diskon, grandTotal } = calculateBill();
+        // --- CETAK BILL PERFECT SOLUTION ---
+        function cetakBillSempurna() {
+            const { subtotal, discount, serviceChargeVal, taxVal, grandTotal } = calculateTotal();
+            
+            // Populate Header Details
+            const pLogoContainer = document.getElementById('pLogoContainer');
+            if(appSettings.logoBase64) {
+                pLogoContainer.innerHTML = `<img src="${appSettings.logoBase64}" class="bill-logo-img" alt="Logo">`;
+            } else {
+                pLogoContainer.innerHTML = `
+                    <h3 class="fw-bold m-0" style="color: #b8860b;">NOORMANS</h3>
+                    <small class="text-muted tracking-widest" style="letter-spacing: 3px;">HOTEL SEMARANG</small>
+                `;
+            }
+
+            document.getElementById('pCategoryTitle').innerText = appSettings.billTitle || 'ROOM SERVICE';
+            document.getElementById('pDateTime').innerText = document.getElementById('billDateTimeInput').value;
+            
+            const prefix = appSettings.prefixBill || 'RS-';
+            document.getElementById('pNoBill').innerText = prefix + String(currentBillNum).padStart(3, '0');
+            document.getElementById('pRoomNo').innerText = document.getElementById('inputRoomNo').value || '101';
+
+            // Populate Items List (Filter out empty items)
+            const pItemsBody = document.getElementById('pItemsBody');
+            pItemsBody.innerHTML = '';
+            let itemCount = 0;
+
+            document.querySelectorAll('#billItemsBody tr').forEach(tr => {
+                const kode = tr.querySelector('.item-select').value;
+                const qty = parseInt(tr.querySelector('.item-qty').value) || 0;
+
+                if(kode && qty > 0) {
+                    const item = masterItems.find(i => i.kode === kode);
+                    const lineTotal = item.harga * qty;
+                    pItemsBody.innerHTML += `
+                        <tr>
+                            <td style="text-align: left; padding: 4px 0;">${item.nama}</td>
+                            <td style="text-align: center; padding: 4px 0;">${qty}</td>
+                            <td style="text-align: right; padding: 4px 0;">${formatRpExact(item.harga)}</td>
+                            <td style="text-align: right; padding: 4px 0;">${formatRpExact(lineTotal)}</td>
+                        </tr>
+                    `;
+                    itemCount++;
+                }
+            });
+
+            // If no items were selected, show empty rows cleanly
+            if(itemCount === 0) {
+                for(let i=0; i<5; i++) {
+                    pItemsBody.innerHTML += `
+                        <tr>
+                            <td style="text-align: left; padding: 4px 0; color: #ccc;">-</td>
+                            <td style="text-align: center; padding: 4px 0; color: #ccc;">-</td>
+                            <td style="text-align: right; padding: 4px 0; color: #ccc;">Rp0</td>
+                            <td style="text-align: right; padding: 4px 0; color: #ccc;">Rp0</td>
+                        </tr>
+                    `;
+                }
+            }
+
+            // Populate Summary Amounts
+            document.getElementById('pSubtotal').innerText = formatRpExact(subtotal);
+            document.getElementById('pDiscount').innerText = formatRpExact(discount);
+            document.getElementById('pService').innerText = formatRpExact(serviceChargeVal);
+            document.getElementById('pTax').innerText = formatRpExact(taxVal);
+            document.getElementById('pGrandTotal').innerText = formatRpExact(grandTotal);
+
+            // Trigger System Print Window
+            window.print();
+        }
+
+        function saveTransaction() {
+            const { subtotal, discount, serviceChargeVal, taxVal, grandTotal } = calculateTotal();
             if(grandTotal <= 0) {
-                alert('⚠️ Peringatan: Pilih barang dan jumlah Qty terlebih dahulu!');
+                alert('⚠️ Peringatan: Pilih item barang dan Qty terlebih dahulu!');
                 return;
             }
 
-            const noNota = 'INV-' + String(currentNotaNum).padStart(3, '0');
-            const tanggal = document.getElementById('billTanggal').value;
-            const pelanggan = document.getElementById('billPelanggan').value || 'Pelanggan Umum';
+            const prefix = appSettings.prefixBill || 'RS-';
+            const noBill = prefix + String(currentBillNum).padStart(3, '0');
+            const dtFormatted = document.getElementById('billDateTimeInput').value;
+            const roomNo = document.getElementById('inputRoomNo').value || '101';
+            const guestName = document.getElementById('inputGuestName').value || 'Tamu Hotel';
 
-            // Extract items
             const savedItems = [];
-            document.querySelectorAll('#billBody tr').forEach(tr => {
+            document.querySelectorAll('#billItemsBody tr').forEach(tr => {
                 const select = tr.querySelector('.item-select');
                 const kode = select.value;
                 const qty = parseInt(tr.querySelector('.item-qty').value) || 0;
@@ -381,22 +954,24 @@
                 if(kode && qty > 0) {
                     const master = masterItems.find(i => i.kode === kode);
                     savedItems.push({
-                        noNota,
-                        tanggal,
-                        pelanggan,
+                        noBill,
+                        tanggal: dtFormatted,
+                        roomGuest: `${roomNo} (${guestName})`,
                         kodeBarang: master.kode,
                         namaBarang: master.nama,
                         harga: master.harga,
                         qty,
                         subtotal: master.harga * qty,
-                        diskon,
+                        discount,
+                        serviceCharge: serviceChargeVal,
+                        pajak: taxVal,
                         grandTotal
                     });
                 }
             });
 
             if(savedItems.length === 0) {
-                alert('⚠️ Peringatan: Minimal ada 1 barang dengan Qty > 0!');
+                alert('⚠️ Peringatan: Minimal ada 1 item dengan Qty > 0!');
                 return;
             }
 
@@ -404,69 +979,145 @@
             rekapPenjualan.push(...savedItems);
             localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
 
-            // Auto Increment Nota Number
-            currentNotaNum++;
-            localStorage.setItem(STORAGE_NOTA, currentNotaNum);
-            updateNotaDisplay();
+            // Auto Next Bill Number
+            currentBillNum++;
+            localStorage.setItem(STORAGE_NOTA, currentBillNum);
+            updateBillHeaderDisplay();
 
-            // Reset Bill Form
-            document.getElementById('billPelanggan').value = 'Pelanggan Umum';
-            document.getElementById('inputDiskon').value = 0;
-            document.getElementById('inputBayar').value = '';
-            initBillRows();
-            calculateBill();
+            // Reset Form for Next Transaction
+            document.getElementById('inputDiscount').value = 0;
+            document.getElementById('inputPayment').value = '';
+            updateLiveDateTime();
+            initBillRows(7);
+            calculateTotal();
 
             renderRekap();
-            alert(`✅ Transaksi (${noNota}) berhasil disimpan!
-Nomor nota otomatis berlanjut ke: INV-${String(currentNotaNum).padStart(3, '0')}`);
+            alert(`✅ Transaksi Bill (${noBill}) berhasil disimpan!
+Nomor bill berikutnya: ${prefix}${String(currentBillNum).padStart(3, '0')}`);
         }
 
-        // --- REKAP LOGIC ---
+        // --- REKAP PENJUALAN LOGIC ---
         function renderRekap() {
-            const body = document.getElementById('rekapBody');
+            const body = document.getElementById('rekapTableBody');
             body.innerHTML = '';
-            rekapPenjualan.forEach(item => {
+            rekapPenjualan.forEach((item, index) => {
                 body.innerHTML += `
                     <tr>
-                        <td><span class="badge bg-primary">${item.noNota}</span></td>
+                        <td><span class="badge bg-primary">${item.noBill}</span></td>
                         <td>${item.tanggal}</td>
-                        <td>${item.pelanggan}</td>
+                        <td>${item.roomGuest}</td>
                         <td>${item.kodeBarang}</td>
                         <td class="fw-bold">${item.namaBarang}</td>
-                        <td>${formatRp(item.harga)}</td>
+                        <td>${formatRpExact(item.harga)}</td>
                         <td><span class="badge bg-light text-dark fs-6">${item.qty}</span></td>
-                        <td>${formatRp(item.subtotal)}</td>
-                        <td>${formatRp(item.diskon)}</td>
-                        <td class="fw-bold text-success">${formatRp(item.grandTotal)}</td>
+                        <td>${formatRpExact(item.subtotal)}</td>
+                        <td>${formatRpExact(item.discount)}</td>
+                        <td>${formatRpExact(item.serviceCharge || 0)}</td>
+                        <td>${formatRpExact(item.pajak || 0)}</td>
+                        <td class="fw-bold text-success">${formatRpExact(item.grandTotal)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteRekapRow(${index})"><i class="bi bi-trash"></i></button>
+                        </td>
                     </tr>
                 `;
             });
+            localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
         }
 
-        function clearRekap() {
-            if(confirm('Apakah Anda yakin ingin menghapus seluruh rekapan penjualan?')) {
-                rekapPenjualan = [];
-                localStorage.removeItem(STORAGE_REKAP);
+        function submitAddRekap(e) {
+            e.preventDefault();
+            const noBill = document.getElementById('rekapModalNoBill').value;
+            const tanggal = document.getElementById('rekapModalTanggal').value;
+            const roomGuest = document.getElementById('rekapModalRoom').value;
+            const kodeBarang = document.getElementById('rekapModalKode').value || 'MANUAL';
+            const namaBarang = document.getElementById('rekapModalNama').value;
+            const harga = parseInt(document.getElementById('rekapModalHarga').value) || 0;
+            const qty = parseInt(document.getElementById('rekapModalQty').value) || 1;
+            const discount = parseInt(document.getElementById('rekapModalDiscount').value) || 0;
+            const subtotal = harga * qty;
+
+            const serviceRate = parseFloat(appSettings.serviceRate || 0);
+            const taxRate = parseFloat(appSettings.taxRate || 0);
+            const serviceCharge = Math.round((subtotal - discount) * (serviceRate / 100));
+            const pajak = Math.round((subtotal - discount + serviceCharge) * (taxRate / 100));
+            const grandTotal = Math.max(0, subtotal - discount + serviceCharge + pajak);
+
+            rekapPenjualan.push({
+                noBill, tanggal, roomGuest, kodeBarang, namaBarang, harga, qty, subtotal, discount, serviceCharge, pajak, grandTotal
+            });
+
+            renderRekap();
+            document.getElementById('formAddRekap').reset();
+            bootstrap.Modal.getInstance(document.getElementById('addRekapModal')).hide();
+            alert('✅ Data transaksi manual berhasil masuk ke rekapan!');
+        }
+
+        function deleteRekapRow(index) {
+            if(confirm('Hapus baris ini dari rekapan?')) {
+                rekapPenjualan.splice(index, 1);
                 renderRekap();
             }
         }
 
-        function exportToCSV() {
+        function clearRekap() {
+            if(confirm('⚠️ Hapus seluruh data rekapan penjualan?')) {
+                rekapPenjualan = [];
+                renderRekap();
+            }
+        }
+
+        function exportRekapCSV() {
             if(rekapPenjualan.length === 0) {
-                alert('Belum ada data rekapan untuk diexport!');
+                alert('Belum ada data rekapan!');
                 return;
             }
-            let csv = 'No Nota,Tanggal,Pelanggan,Kode Barang,Nama Barang,Harga Satuan,Qty,Subtotal,Diskon,Grand Total
-';
+            let csv = 'No Bill,Tanggal Waktu,Room Guest,Kode Barang,Nama Barang,Harga Satuan,Qty,Subtotal,Discount,Service Charge,Gov Tax,Total\n';
             rekapPenjualan.forEach(row => {
-                csv += `"${row.noNota}","${row.tanggal}","${row.pelanggan}","${row.kodeBarang}","${row.namaBarang}",${row.harga},${row.qty},${row.subtotal},${row.diskon},${row.grandTotal}
-`;
+                csv += `"${row.noBill}","${row.tanggal}","${row.roomGuest}","${row.kodeBarang}","${row.namaBarang}",${row.harga},${row.qty},${row.subtotal},${row.discount},${row.serviceCharge || 0},${row.pajak || 0},${row.grandTotal}\n`;
             });
+            downloadCSV(csv, `Rekap_Penjualan_${new Date().toISOString().slice(0,10)}.csv`);
+        }
 
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
+        function importRekapCSV(inputEl) {
+            const file = inputEl.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                let count = 0;
+                for(let i=1; i<lines.length; i++) {
+                    const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
+                    if(cols.length >= 10 && cols[0] !== '') {
+                        rekapPenjualan.push({
+                            noBill: cols[0],
+                            tanggal: cols[1],
+                            roomGuest: cols[2],
+                            kodeBarang: cols[3],
+                            namaBarang: cols[4],
+                            harga: parseInt(cols[5]) || 0,
+                            qty: parseInt(cols[6]) || 1,
+                            subtotal: parseInt(cols[7]) || 0,
+                            discount: parseInt(cols[8]) || 0,
+                            serviceCharge: parseInt(cols[9]) || 0,
+                            pajak: parseInt(cols[10]) || 0,
+                            grandTotal: parseInt(cols[11]) || 0
+                        });
+                        count++;
+                    }
+                }
+                renderRekap();
+                alert(`✅ Berhasil mengimpor ${count} data rekapan!`);
+                inputEl.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.getElementById("downloadLinkAnchor") || document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", `Rekap_Penjualan_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("download", filename);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
