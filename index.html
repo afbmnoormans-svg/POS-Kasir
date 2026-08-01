@@ -357,6 +357,36 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- BARIS FILTER TANGGAL REKAP -->
+                    <div class="p-3 mb-3 bg-light rounded border">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-auto fw-bold text-secondary">
+                                <i class="bi bi-funnel-fill me-1"></i> Filter Tanggal:
+                            </div>
+                            <div class="col-md-auto d-flex align-items-center gap-2">
+                                <label for="rekapStartDate" class="form-label m-0 small">Dari:</label>
+                                <input type="date" id="rekapStartDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-auto d-flex align-items-center gap-2">
+                                <label for="rekapEndDate" class="form-label m-0 small">Sampai:</label>
+                                <input type="date" id="rekapEndDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-auto d-flex gap-1">
+                                <button class="btn btn-primary btn-sm" onclick="applyRekapDateFilter()">
+                                    <i class="bi bi-search me-1"></i> Filter
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="resetRekapDateFilter()">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                                </button>
+                            </div>
+                            <div class="col-md-auto ms-auto text-end">
+                                <small class="text-muted d-block">Ringkasan Terfilter:</small>
+                                <span class="badge bg-primary me-1" id="rekapSummaryQty">0 Qty</span>
+                                <span class="badge bg-success" id="rekapSummaryGrandTotal">Rp0</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
                             <thead>
@@ -1391,34 +1421,95 @@
         }
 
         // --- REKAP PENJUALAN LOGIC ---
-        function renderRekapUI() {
+        function parseRekapDate(dateStr) {
+            if (!dateStr) return null;
+            // Format diharapkan DD/MM/YYYY
+            const parts = dateStr.split(' ')[0].split('/');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return new Date(dateStr);
+        }
+
+        function renderRekapUI(dataToRender = null) {
+            const list = dataToRender || rekapPenjualan;
             const body = document.getElementById('rekapTableBody');
             body.innerHTML = '';
-            rekapPenjualan.forEach((item, index) => {
-                body.innerHTML += `
-                    <tr>
-                        <td><span class="badge bg-primary">${item.noBill}</span></td>
-                        <td>${item.tanggal}</td>
-                        <td>${item.roomGuest}</td>
-                        <td>${item.kodeBarang}</td>
-                        <td class="fw-bold">${item.namaBarang}</td>
-                        <td>${formatRpExact(item.harga)}</td>
-                        <td><span class="badge bg-light text-dark fs-6">${item.qty}</span></td>
-                        <td>${formatRpExact(item.subtotal)}</td>
-                        <td>${formatRpExact(item.discount)}</td>
-                        <td>${formatRpExact(item.serviceCharge || 0)}</td>
-                        <td>${formatRpExact(item.pajak || 0)}</td>
-                        <td class="fw-bold text-success">${formatRpExact(item.grandTotal)}</td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary" onclick="reprintBill('${item.noBill}')" title="Cetak Ulang Bill"><i class="bi bi-printer"></i></button>
-                                <button class="btn btn-outline-danger" onclick="deleteRekapRow(${index}, '${item.docId || ''}')" title="Hapus"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+
+            let totalQty = 0;
+            let totalGrandTotal = 0;
+
+            if (list.length === 0) {
+                body.innerHTML = `<tr><td colspan="13" class="text-center text-muted py-3">Tidak ada data transaksi.</td></tr>`;
+            } else {
+                list.forEach((item, index) => {
+                    totalQty += parseInt(item.qty || 0);
+                    totalGrandTotal += parseInt(item.grandTotal || 0);
+
+                    body.innerHTML += `
+                        <tr>
+                            <td><span class="badge bg-primary">${item.noBill}</span></td>
+                            <td>${item.tanggal}</td>
+                            <td>${item.roomGuest}</td>
+                            <td>${item.kodeBarang}</td>
+                            <td class="fw-bold">${item.namaBarang}</td>
+                            <td>${formatRpExact(item.harga)}</td>
+                            <td><span class="badge bg-light text-dark fs-6">${item.qty}</span></td>
+                            <td>${formatRpExact(item.subtotal)}</td>
+                            <td>${formatRpExact(item.discount)}</td>
+                            <td>${formatRpExact(item.serviceCharge || 0)}</td>
+                            <td>${formatRpExact(item.pajak || 0)}</td>
+                            <td class="fw-bold text-success">${formatRpExact(item.grandTotal)}</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-primary" onclick="reprintBill('${item.noBill}')" title="Cetak Ulang Bill"><i class="bi bi-printer"></i></button>
+                                    <button class="btn btn-outline-danger" onclick="deleteRekapRow(${index}, '${item.docId || ''}')" title="Hapus"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('rekapSummaryQty').innerText = `${totalQty} Qty`;
+            document.getElementById('rekapSummaryGrandTotal').innerText = formatRpExact(totalGrandTotal);
+
+            if (!dataToRender) {
+                localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
+            }
+        }
+
+        function applyRekapDateFilter() {
+            const startStr = document.getElementById('rekapStartDate').value;
+            const endStr = document.getElementById('rekapEndDate').value;
+
+            if (!startStr && !endStr) {
+                renderRekapUI();
+                return;
+            }
+
+            const startDate = startStr ? new Date(startStr) : null;
+            if (startDate) startDate.setHours(0,0,0,0);
+
+            const endDate = endStr ? new Date(endStr) : null;
+            if (endDate) endDate.setHours(23,59,59,999);
+
+            const filtered = rekapPenjualan.filter(item => {
+                const itemDate = parseRekapDate(item.tanggal);
+                if (!itemDate || isNaN(itemDate.getTime())) return true;
+
+                if (startDate && itemDate < startDate) return false;
+                if (endDate && itemDate > endDate) return false;
+                return true;
             });
-            localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
+
+            renderRekapUI(filtered);
+        }
+
+        function resetRekapDateFilter() {
+            document.getElementById('rekapStartDate').value = '';
+            document.getElementById('rekapEndDate').value = '';
+            renderRekapUI();
         }
 
         function reprintBill(noBillTarget) {
