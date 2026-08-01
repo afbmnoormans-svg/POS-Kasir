@@ -1149,12 +1149,75 @@
                         <td>${formatRpExact(item.pajak || 0)}</td>
                         <td class="fw-bold text-success">${formatRpExact(item.grandTotal)}</td>
                         <td class="text-center">
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteRekapRow(${index}, '${item.docId || ''}')"><i class="bi bi-trash"></i></button>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary" onclick="reprintBill('${item.noBill}')" title="Cetak Ulang Bill"><i class="bi bi-printer"></i></button>
+                                <button class="btn btn-outline-danger" onclick="deleteRekapRow(${index}, '${item.docId || ''}')" title="Hapus"><i class="bi bi-trash"></i></button>
+                            </div>
                         </td>
                     </tr>
                 `;
             });
             localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
+        }
+
+        function reprintBill(noBillTarget) {
+            const billItems = rekapPenjualan.filter(item => item.noBill === noBillTarget);
+            if (billItems.length === 0) {
+                alert('Data bill tidak ditemukan!');
+                return;
+            }
+
+            const sample = billItems[0];
+            const pLogoContainer = document.getElementById('pLogoContainer');
+            if(appSettings.logoBase64) {
+                pLogoContainer.innerHTML = `<img src="${appSettings.logoBase64}" class="bill-logo-img" alt="Logo">`;
+            } else {
+                pLogoContainer.innerHTML = `
+                    <h3 class="fw-bold m-0" style="color: #b8860b;">NOORMANS</h3>
+                    <small class="text-muted tracking-widest" style="letter-spacing: 3px;">HOTEL SEMARANG</small>
+                `;
+            }
+
+            document.getElementById('pCategoryTitle').innerText = appSettings.billTitle || 'ROOM SERVICE';
+            document.getElementById('pDateTime').innerText = sample.tanggal || formatDateTimeNow();
+            document.getElementById('pNoBill').innerText = sample.noBill;
+
+            // Extract room number from roomGuest e.g., "101 (Tamu Hotel)"
+            let roomNoVal = sample.roomGuest || '101';
+            if (roomNoVal.includes('(')) {
+                roomNoVal = roomNoVal.split('(')[0].trim();
+            }
+            document.getElementById('pRoomNo').innerText = roomNoVal;
+
+            const pItemsBody = document.getElementById('pItemsBody');
+            pItemsBody.innerHTML = '';
+
+            let totalSubtotal = 0;
+            let discountVal = sample.discount || 0;
+            let serviceVal = sample.serviceCharge || 0;
+            let taxVal = sample.pajak || 0;
+            let grandTotalVal = sample.grandTotal || 0;
+
+            billItems.forEach(item => {
+                const lineTotal = item.subtotal || (item.harga * item.qty);
+                totalSubtotal += lineTotal;
+                pItemsBody.innerHTML += `
+                    <tr>
+                        <td style="text-align: left; padding: 4px 0;">${item.namaBarang}</td>
+                        <td style="text-align: center; padding: 4px 0;">${item.qty}</td>
+                        <td style="text-align: right; padding: 4px 0;">${formatRpExact(item.harga)}</td>
+                        <td style="text-align: right; padding: 4px 0;">${formatRpExact(lineTotal)}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('pSubtotal').innerText = formatRpExact(totalSubtotal);
+            document.getElementById('pDiscount').innerText = formatRpExact(discountVal);
+            document.getElementById('pService').innerText = formatRpExact(serviceVal);
+            document.getElementById('pTax').innerText = formatRpExact(taxVal);
+            document.getElementById('pGrandTotal').innerText = formatRpExact(grandTotalVal);
+
+            window.print();
         }
 
         function renderRekap() {
