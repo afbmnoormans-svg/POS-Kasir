@@ -329,7 +329,8 @@
                                     <th>Nama Item</th>
                                     <th>Kategori</th>
                                     <th>Satuan</th>
-                                    <th>Harga Satuan</th>
+                                    <th>Selling Price</th>
+                                    <th>Net Selling Price</th>
                                     <th class="text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -643,12 +644,65 @@
                             <input type="text" id="modalSatuanBarang" class="form-control" value="Porsi" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Harga Satuan (Rp)</label>
-                            <input type="number" id="modalHargaBarang" class="form-control" placeholder="45000" min="0" required>
+                            <label class="form-label fw-bold text-primary">Selling Price (Rp)</label>
+                            <input type="number" id="modalSellingPrice" class="form-control" placeholder="e.g. 18000" min="0" oninput="calculateNetSellingPrice()" required>
                         </div>
-                        <div class="text-end">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-success">Net Selling Price (Rp)</label>
+                            <input type="number" id="modalNetSellingPrice" class="form-control bg-light" placeholder="Terhitung otomatis (Selling Price / 1.21)" readonly required>
+                            <small class="text-muted" style="font-size: 0.8rem;">*Terhitung otomatis berdasarkan rumus: Selling Price / 1.21</small>
+                        </div>
+                        <div class="text-end mt-4">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                             <button type="submit" class="btn btn-primary">Simpan Item</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1.5: EDIT ITEM MASTER -->
+    <div class="modal fade" id="editItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Item Master</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditItem" onsubmit="submitEditItem(event)">
+                        <input type="hidden" id="editItemIndex">
+                        <input type="hidden" id="editItemDocId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Kode Item</label>
+                            <input type="text" id="editKodeBarang" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nama Item / Menu</label>
+                            <input type="text" id="editNamaBarang" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Kategori</label>
+                            <input type="text" id="editKategoriBarang" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Satuan</label>
+                            <input type="text" id="editSatuanBarang" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-primary">Selling Price (Rp)</label>
+                            <input type="number" id="editSellingPrice" class="form-control" min="0" oninput="calculateNetSellingPriceEdit()" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-success">Net Selling Price (Rp)</label>
+                            <input type="number" id="editNetSellingPrice" class="form-control bg-light" readonly required>
+                            <small class="text-muted" style="font-size: 0.8rem;">*Terhitung otomatis berdasarkan rumus: Selling Price / 1.21</small>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Update Item</button>
                         </div>
                     </form>
                 </div>
@@ -721,11 +775,9 @@
         const STORAGE_SETTINGS = 'pos_hotel_settings_v2';
 
         let masterItems = JSON.parse(localStorage.getItem(STORAGE_ITEMS)) || [
-            { kode: 'RS-001', nama: 'Nasi Goreng Hotel', kategori: 'F&B', satuan: 'Porsi', harga: 45000 },
-            { kode: 'RS-002', nama: 'Club Sandwich', kategori: 'F&B', satuan: 'Porsi', harga: 50000 },
-            { kode: 'RS-003', nama: 'Fresh Orange Juice', kategori: 'F&B', satuan: 'Gelas', harga: 25000 },
-            { kode: 'RS-004', nama: 'Hot Americano Coffee', kategori: 'F&B', satuan: 'Cangkir', harga: 30000 },
-            { kode: 'RS-005', nama: 'Chicken Steak Hotplate', kategori: 'F&B', satuan: 'Porsi', harga: 65000 }
+            { kode: 'RSF-03', nama: 'Club Sandwich', kategori: 'Food & Beverage', satuan: 'Porsi', sellingPrice: 18000, harga: 14876 },
+            { kode: 'RSF-01', nama: 'Mizz Me', kategori: 'Food & Beverage', satuan: 'Porsi', sellingPrice: 18000, harga: 14876 },
+            { kode: 'RSF-02', nama: 'Soto Betawi', kategori: 'Food & Beverage', satuan: 'Porsi', sellingPrice: 76316, harga: 63071 }
         ];
 
         let rekapPenjualan = JSON.parse(localStorage.getItem(STORAGE_REKAP)) || [];
@@ -911,19 +963,36 @@
         }
 
         // --- MASTER ITEM LOGIC ---
+        function calculateNetSellingPrice() {
+            const sellingPrice = parseFloat(document.getElementById('modalSellingPrice').value) || 0;
+            const netSellingPrice = Math.round(sellingPrice / 1.21);
+            document.getElementById('modalNetSellingPrice').value = netSellingPrice || 0;
+        }
+
+        function calculateNetSellingPriceEdit() {
+            const sellingPrice = parseFloat(document.getElementById('editSellingPrice').value) || 0;
+            const netSellingPrice = Math.round(sellingPrice / 1.21);
+            document.getElementById('editNetSellingPrice').value = netSellingPrice || 0;
+        }
+
         function renderMasterItemsUI() {
             const body = document.getElementById('itemsMasterTableBody');
             body.innerHTML = '';
             masterItems.forEach((item, index) => {
+                const sellingPriceVal = item.sellingPrice ? formatRpExact(item.sellingPrice) : '-';
                 body.innerHTML += `
                     <tr>
                         <td><span class="badge bg-secondary">${item.kode}</span></td>
                         <td class="fw-bold">${item.nama}</td>
                         <td>${item.kategori || 'F&B'}</td>
                         <td>${item.satuan}</td>
-                        <td>${formatRpExact(item.harga)}</td>
+                        <td>${sellingPriceVal}</td>
+                        <td class="fw-bold text-success">${formatRpExact(item.harga)}</td>
                         <td class="text-center">
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteMasterItem(${index}, '${item.docId || ''}')"><i class="bi bi-trash"></i></button>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary" onclick="openEditItemModal(${index})" title="Edit Item"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-outline-danger" onclick="deleteMasterItem(${index}, '${item.docId || ''}')" title="Hapus Item"><i class="bi bi-trash"></i></button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -936,14 +1005,70 @@
             renderMasterItemsUI();
         }
 
+        function openEditItemModal(index) {
+            const item = masterItems[index];
+            if(!item) return;
+
+            document.getElementById('editItemIndex').value = index;
+            document.getElementById('editItemDocId').value = item.docId || '';
+            document.getElementById('editKodeBarang').value = item.kode || '';
+            document.getElementById('editNamaBarang').value = item.nama || '';
+            document.getElementById('editKategoriBarang').value = item.kategori || 'Food & Beverage';
+            document.getElementById('editSatuanBarang').value = item.satuan || 'Porsi';
+            document.getElementById('editSellingPrice').value = item.sellingPrice || '';
+            
+            calculateNetSellingPriceEdit();
+
+            const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+            editModal.show();
+        }
+
+        async function submitEditItem(e) {
+            e.preventDefault();
+            const index = parseInt(document.getElementById('editItemIndex').value);
+            const docId = document.getElementById('editItemDocId').value;
+
+            const sellingPrice = parseFloat(document.getElementById('editSellingPrice').value) || 0;
+            const netSellingPrice = parseFloat(document.getElementById('editNetSellingPrice').value) || Math.round(sellingPrice / 1.21);
+
+            const updatedItem = {
+                ...masterItems[index],
+                kode: document.getElementById('editKodeBarang').value.trim(),
+                nama: document.getElementById('editNamaBarang').value.trim(),
+                kategori: document.getElementById('editKategoriBarang').value.trim(),
+                satuan: document.getElementById('editSatuanBarang').value.trim(),
+                sellingPrice: sellingPrice,
+                harga: netSellingPrice
+            };
+
+            masterItems[index] = updatedItem;
+            renderMasterItemsUI();
+
+            // Simpan perubahan ke Cloud Firebase jika terhubung
+            if (docId && window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                try {
+                    await window.dbSetDoc(window.dbDoc(window.db, "master_barang", docId), updatedItem);
+                } catch(err) {
+                    console.error("Gagal mengupdate item di cloud:", err);
+                }
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide();
+            alert('✅ Data item berhasil diperbarui!');
+        }
+
         async function submitAddItem(e) {
             e.preventDefault();
+            const sellingPrice = parseFloat(document.getElementById('modalSellingPrice').value) || 0;
+            const netSellingPrice = parseFloat(document.getElementById('modalNetSellingPrice').value) || Math.round(sellingPrice / 1.21);
+
             const newItem = {
                 kode: document.getElementById('modalKodeBarang').value.trim(),
                 nama: document.getElementById('modalNamaBarang').value.trim(),
                 kategori: document.getElementById('modalKategoriBarang').value.trim(),
                 satuan: document.getElementById('modalSatuanBarang').value.trim(),
-                harga: parseInt(document.getElementById('modalHargaBarang').value)
+                sellingPrice: sellingPrice,
+                harga: netSellingPrice
             };
 
             masterItems.push(newItem);
@@ -979,9 +1104,9 @@
         }
 
         function exportItemsCSV() {
-            let csv = 'Kode Item,Nama Item,Kategori,Satuan,Harga Satuan\n';
+            let csv = 'Kode Item,Nama Item,Kategori,Satuan,Selling Price,Net Selling Price\n';
             masterItems.forEach(item => {
-                csv += `"${item.kode}","${item.nama}","${item.kategori || 'F&B'}","${item.satuan}",${item.harga}\n`;
+                csv += `"${item.kode}","${item.nama}","${item.kategori || 'F&B'}","${item.satuan}",${item.sellingPrice || 0},${item.harga}\n`;
             });
             downloadCSV(csv, `Master_Item_${new Date().toISOString().slice(0,10)}.csv`);
         }
@@ -997,12 +1122,16 @@
                 for(let i=1; i<lines.length; i++) {
                     const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
                     if(cols.length >= 4 && cols[0] !== '') {
+                        const sellingPrice = parseFloat(cols[4]) || 0;
+                        const netSellingPrice = parseFloat(cols[5]) || Math.round(sellingPrice / 1.21) || parseFloat(cols[3]) || 0;
+
                         const itemObj = {
                             kode: cols[0],
                             nama: cols[1],
                             kategori: cols[2] || 'F&B',
                             satuan: cols[3] || 'Pcs',
-                            harga: parseInt(cols[4] || cols[3]) || 0
+                            sellingPrice: sellingPrice,
+                            harga: netSellingPrice
                         };
                         masterItems.push(itemObj);
 
