@@ -89,17 +89,17 @@
         .logo-preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
         /* Hidden Print Template by Default */
-        #printAreaOnly { display: none; }
+        #printAreaOnly, #printAreaLaporan { display: none; }
 
         /* PRINT SPECIFIC STYLES - SOLVES ALL PRINT ISSUES */
         @media print {
             body * {
                 visibility: hidden !important;
             }
-            #printAreaOnly, #printAreaOnly * {
+            .printable-active, .printable-active * {
                 visibility: visible !important;
             }
-            #printAreaOnly {
+            .printable-active {
                 display: block !important;
                 position: absolute !important;
                 left: 0 !important;
@@ -164,9 +164,11 @@
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark no-print">
         <div class="container-fluid px-4">
-            <a class="navbar-brand d-inline-flex flex-column align-items-start" href="#">
-                <div><i class="bi bi-receipt-cutoff me-2"></i>POS Kasir - Restaurant</div>
-                <small class="fw-normal text-warning" style="font-size: 0.72rem; line-height: 1;">Jika Terjadi ERROR Silahkan Hubungi 085727903951</small>
+            <a class="navbar-brand d-flex flex-column lh-sm py-1" href="#">
+                <span><i class="bi bi-receipt-cutoff me-2"></i>POS Kasir - Restaurant</span>
+                <small class="text-warning fw-normal mt-1" style="font-size: 0.7rem; letter-spacing: 0.2px;">
+                    <i class="bi bi-telephone-fill me-1"></i>Jika Terjadi ERROR Silahkan Hubungi 085727903951
+                </small>
             </a>
             <span class="badge bg-success ms-2" id="cloudStatusBadge"><i class="bi bi-cloud-check-fill me-1"></i>Cloud Sync</span>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -175,8 +177,9 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <div class="navbar-nav ms-auto">
                     <button class="btn btn-outline-light btn-sm me-2 my-1" onclick="showTab('billTab')"><i class="bi bi-cart3"></i> Kasir / Bill</button>
-                    <button class="btn btn-outline-light btn-sm me-2 my-1" onclick="showTab('itemsTab')"><i class="bi bi-box-seam"></i> Database Barang</button>
+                    <button class="btn btn-outline-light btn-sm me-2 my-1" onclick="showTab('itemsTab')"><i class="bi bi-box-seam"></i> Database Item</button>
                     <button class="btn btn-outline-light btn-sm me-2 my-1" onclick="showTab('rekapTab')"><i class="bi bi-journal-text"></i> Rekap Penjualan</button>
+                    <button class="btn btn-outline-light btn-sm me-2 my-1" onclick="showTab('laporanHarianTab')"><i class="bi bi-file-earmark-bar-graph"></i> Laporan Harian</button>
                     <button class="btn btn-outline-light btn-sm my-1" onclick="showTab('settingsTab')"><i class="bi bi-gear"></i> Pengaturan Bill & Logo</button>
                 </div>
             </div>
@@ -301,8 +304,8 @@
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button class="btn btn-primary btn-lg" onclick="saveTransaction()"><i class="bi bi-check-circle-fill me-2"></i>SIMPAN TRANSAKSI</button>
                                 <button class="btn btn-outline-dark btn-lg" onclick="cetakBillSempurna()"><i class="bi bi-printer me-2"></i>CETAK BILL</button>
+                                <button class="btn btn-primary btn-lg" onclick="saveTransaction()"><i class="bi bi-check-circle-fill me-2"></i>SIMPAN TRANSAKSI</button>
                             </div>
                         </div>
                     </div>
@@ -310,13 +313,13 @@
             </div>
         </div>
 
-        <!-- TAB 2: DATABASE MASTER BARANG -->
+        <!-- TAB 2: DATABASE MASTER ITEM -->
         <div id="itemsTab" class="tab-page" style="display: none;">
             <div class="card">
                 <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <h5 class="m-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Database Master Barang</h5>
+                    <h5 class="m-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Database Item</h5>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal"><i class="bi bi-plus-circle me-1"></i> Input Barang Baru</button>
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addItemModal"><i class="bi bi-plus-circle me-1"></i> Input Item Baru</button>
                         <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('importItemsFile').click()"><i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV</button>
                         <input type="file" id="importItemsFile" accept=".csv" style="display:none;" onchange="importItemsCSV(this)">
                         <button class="btn btn-outline-secondary btn-sm" onclick="exportItemsCSV()"><i class="bi bi-file-earmark-arrow-down me-1"></i> Export CSV</button>
@@ -327,11 +330,12 @@
                         <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
-                                    <th>Kode Barang</th>
-                                    <th>Nama Barang</th>
+                                    <th>Kode Item</th>
+                                    <th>Nama Item</th>
                                     <th>Kategori</th>
                                     <th>Satuan</th>
-                                    <th>Harga Satuan</th>
+                                    <th>Selling Price</th>
+                                    <th>Net Selling Price</th>
                                     <th class="text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -358,6 +362,36 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- BARIS FILTER TANGGAL REKAP -->
+                    <div class="p-3 mb-3 bg-light rounded border">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-auto fw-bold text-secondary">
+                                <i class="bi bi-funnel-fill me-1"></i> Filter Tanggal:
+                            </div>
+                            <div class="col-md-auto d-flex align-items-center gap-2">
+                                <label for="rekapStartDate" class="form-label m-0 small">Dari:</label>
+                                <input type="date" id="rekapStartDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-auto d-flex align-items-center gap-2">
+                                <label for="rekapEndDate" class="form-label m-0 small">Sampai:</label>
+                                <input type="date" id="rekapEndDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-auto d-flex gap-1">
+                                <button class="btn btn-primary btn-sm" onclick="applyRekapDateFilter()">
+                                    <i class="bi bi-search me-1"></i> Filter
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="resetRekapDateFilter()">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                                </button>
+                            </div>
+                            <div class="col-md-auto ms-auto text-end">
+                                <small class="text-muted d-block">Ringkasan Terfilter:</small>
+                                <span class="badge bg-primary me-1" id="rekapSummaryQty">0 Qty</span>
+                                <span class="badge bg-success" id="rekapSummaryGrandTotal">Rp0</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-striped align-middle">
                             <thead>
@@ -386,7 +420,75 @@
             </div>
         </div>
 
-        <!-- TAB 4: PENGATURAN BENTUK BILL, LOGO & TAX RATE -->
+        <!-- TAB 4: LAPORAN HARIAN PENJUALAN -->
+        <div id="laporanHarianTab" class="tab-page" style="display: none;">
+            <div class="card">
+                <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <h5 class="m-0 fw-bold"><i class="bi bi-file-earmark-bar-graph me-2"></i>Laporan Harian Penjualan</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="filterTanggalLaporan" class="form-label m-0 fw-semibold">Pilih Tanggal:</label>
+                        <input type="date" id="filterTanggalLaporan" class="form-control form-control-sm" style="width: auto;" onchange="renderLaporanHarian()">
+                        <button class="btn btn-primary btn-sm" onclick="cetakLaporanHarian()"><i class="bi bi-printer me-1"></i> Cetak Laporan</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <small class="text-muted d-block">Total Transaksi / Bill</small>
+                                <span class="fs-4 fw-bold text-dark" id="summaryTotalBill">0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <small class="text-muted d-block">Total Item Terjual</small>
+                                <span class="fs-4 fw-bold text-dark" id="summaryTotalQty">0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <small class="text-muted d-block">Total Subtotal Item</small>
+                                <span class="fs-4 fw-bold text-primary" id="summaryTotalSubtotal">Rp0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded border">
+                                <small class="text-muted d-block">Total Grand Total (Inc. Tax/Service)</small>
+                                <span class="fs-4 fw-bold text-success" id="summaryTotalGrandTotal">Rp0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold mb-3">Rekapan Terjual Per Item Menu</h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;" class="text-center">No</th>
+                                    <th>Kode Item</th>
+                                    <th>Nama Item / Menu</th>
+                                    <th class="text-end">Harga Satuan</th>
+                                    <th class="text-center">Qty Terjual</th>
+                                    <th class="text-end">Total Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="laporanItemTableBody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td colspan="4" class="text-end">TOTAL REKAPITULASI ITEM:</td>
+                                    <td class="text-center" id="footTotalQty">0</td>
+                                    <td class="text-end" id="footTotalNominal">Rp0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: PENGATURAN BENTUK BILL, LOGO & TAX RATE -->
         <div id="settingsTab" class="tab-page" style="display: none;">
             <div class="card">
                 <div class="card-header bg-white py-3">
@@ -446,7 +548,7 @@
 
     </div>
 
-    <!-- AREA CETAK KHUSUS (CLEAN PRINT CONTAINER) -->
+    <!-- AREA CETAK KHUSUS BILL (CLEAN PRINT CONTAINER) -->
     <div id="printAreaOnly">
         <div class="bill-paper">
             <div class="text-center mb-3">
@@ -502,18 +604,66 @@
         </div>
     </div>
 
-    <!-- MODAL 1: INPUT BARANG BARU MASTER -->
+    <!-- AREA CETAK KHUSUS LAPORAN HARIAN -->
+    <div id="printAreaLaporan">
+        <div style="padding: 20px; font-family: Arial, sans-serif; color: #000;">
+            <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-weight: bold;" id="pLapHeaderTitle">NOORMANS HOTEL SEMARANG</h3>
+                <h4 style="margin: 5px 0 0 0; text-transform: uppercase;" id="pLapSubTitle">LAPORAN HARIAN PENJUALAN</h4>
+                <p style="margin: 5px 0 0 0; font-size: 0.9rem;" id="pLapTanggalInfo">Tanggal: 01/08/2026</p>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2; border-bottom: 1px solid #000;">
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 40px;">No</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Kode</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Nama Item / Menu</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Harga Satuan</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Qty Terjual</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Total Nominal</th>
+                    </tr>
+                </thead>
+                <tbody id="pLapTableBody">
+                    <!-- Printed Laporan Rows -->
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight: bold; background-color: #f9f9f9;">
+                        <td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">TOTAL:</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;" id="pLapTotalQty">0</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;" id="pLapTotalNominal">Rp0</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                <div style="width: 250px; font-size: 0.9rem;">
+                    <p style="margin-bottom: 5px;">Subtotal Item: <span id="pLapSubtotalVal" style="float: right;">Rp0</span></p>
+                    <p style="margin-bottom: 5px;">Total Discount: <span id="pLapDiscountVal" style="float: right;">Rp0</span></p>
+                    <p style="margin-bottom: 5px;">Total Service Charge: <span id="pLapServiceVal" style="float: right;">Rp0</span></p>
+                    <p style="margin-bottom: 5px;">Total Gov Tax: <span id="pLapTaxVal" style="float: right;">Rp0</span></p>
+                    <p style="font-weight: bold; border-top: 1px solid #000; pt-1; margin-top: 5px;">GRAND TOTAL: <span id="pLapGrandTotalVal" style="float: right;">Rp0</span></p>
+                </div>
+                <div style="text-align: center; min-width: 180px;">
+                    <p style="margin-bottom: 60px;">Semarang, <span id="pLapPrintDate">01/08/2026</span><br>Kasir / Admin,</p>
+                    <p style="font-weight: bold;">( ___________________ )</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: INPUT ITEM BARU MASTER -->
     <div class="modal fade" id="addItemModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Tambah Barang Baru ke Master</h5>
+                    <h5 class="modal-title fw-bold">Tambah Item Baru ke Master</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="formAddItem" onsubmit="submitAddItem(event)">
                         <div class="mb-3">
-                            <label class="form-label">Kode Barang</label>
+                            <label class="form-label">Kode Item</label>
                             <input type="text" id="modalKodeBarang" class="form-control" placeholder="RS-101" required>
                         </div>
                         <div class="mb-3">
@@ -529,12 +679,65 @@
                             <input type="text" id="modalSatuanBarang" class="form-control" value="Porsi" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Harga Satuan (Rp)</label>
-                            <input type="number" id="modalHargaBarang" class="form-control" placeholder="45000" min="0" required>
+                            <label class="form-label fw-bold text-primary">Selling Price (Rp)</label>
+                            <input type="number" id="modalSellingPrice" class="form-control" placeholder="e.g. 18000" min="0" oninput="calculateNetSellingPrice()" required>
                         </div>
-                        <div class="text-end">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-success">Net Selling Price (Rp)</label>
+                            <input type="number" id="modalNetSellingPrice" class="form-control bg-light" placeholder="Terhitung otomatis (Selling Price / 1.21)" readonly required>
+                            <small class="text-muted" style="font-size: 0.8rem;">*Terhitung otomatis berdasarkan rumus: Selling Price / 1.21</small>
+                        </div>
+                        <div class="text-end mt-4">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                            <button type="submit" class="btn btn-primary">Simpan Barang</button>
+                            <button type="submit" class="btn btn-primary">Simpan Item</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1.5: EDIT ITEM MASTER -->
+    <div class="modal fade" id="editItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Item Master</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formEditItem" onsubmit="submitEditItem(event)">
+                        <input type="hidden" id="editItemIndex">
+                        <input type="hidden" id="editItemDocId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Kode Item</label>
+                            <input type="text" id="editKodeBarang" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nama Item / Menu</label>
+                            <input type="text" id="editNamaBarang" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Kategori</label>
+                            <input type="text" id="editKategoriBarang" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Satuan</label>
+                            <input type="text" id="editSatuanBarang" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-primary">Selling Price (Rp)</label>
+                            <input type="number" id="editSellingPrice" class="form-control" min="0" oninput="calculateNetSellingPriceEdit()" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-success">Net Selling Price (Rp)</label>
+                            <input type="number" id="editNetSellingPrice" class="form-control bg-light" readonly required>
+                            <small class="text-muted" style="font-size: 0.8rem;">*Terhitung otomatis berdasarkan rumus: Selling Price / 1.21</small>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Update Item</button>
                         </div>
                     </form>
                 </div>
@@ -607,11 +810,9 @@
         const STORAGE_SETTINGS = 'pos_hotel_settings_v2';
 
         let masterItems = JSON.parse(localStorage.getItem(STORAGE_ITEMS)) || [
-            { kode: 'RS-001', nama: 'Nasi Goreng Hotel', kategori: 'F&B', satuan: 'Porsi', harga: 45000 },
-            { kode: 'RS-002', nama: 'Club Sandwich', kategori: 'F&B', satuan: 'Porsi', harga: 50000 },
-            { kode: 'RS-003', nama: 'Fresh Orange Juice', kategori: 'F&B', satuan: 'Gelas', harga: 25000 },
-            { kode: 'RS-004', nama: 'Hot Americano Coffee', kategori: 'F&B', satuan: 'Cangkir', harga: 30000 },
-            { kode: 'RS-005', nama: 'Chicken Steak Hotplate', kategori: 'F&B', satuan: 'Porsi', harga: 65000 }
+            { kode: 'RSF-03', nama: 'Club Sandwich', kategori: 'Food & Beverage', satuan: 'Porsi', sellingPrice: 18000, harga: 14876 },
+            { kode: 'RSF-01', nama: 'Mizz Me', kategori: 'Food & Beverage', satuan: 'Porsi', sellingPrice: 18000, harga: 14876 },
+            { kode: 'RSF-02', nama: 'Soto Betawi', kategori: 'Food & Beverage', satuan: 'Porsi', sellingPrice: 76316, harga: 63071 }
         ];
 
         let rekapPenjualan = JSON.parse(localStorage.getItem(STORAGE_REKAP)) || [];
@@ -635,6 +836,11 @@
             renderRekap();
             initBillRows(7);
 
+            // Set Tanggal Hari Ini untuk Filter Laporan Harian
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('filterTanggalLaporan').value = todayStr;
+            renderLaporanHarian();
+
             // Cek & Sinkronkan dengan Firebase jika API Key telah dikonfigurasi
             setTimeout(() => {
                 if (window.isFirebaseConfigured && window.isFirebaseConfigured()) {
@@ -653,7 +859,7 @@
         function initFirebaseRealtimeSync() {
             if (!window.db) return;
 
-            // 1. Sync Master Barang Realtime
+            // 1. Sync Master Item Realtime
             window.dbOnSnapshot(window.dbCollection(window.db, "master_barang"), (snapshot) => {
                 if (!snapshot.empty) {
                     let cloudItems = [];
@@ -669,6 +875,7 @@
                 snapshot.forEach(doc => cloudRekap.push({ docId: doc.id, ...doc.data() }));
                 rekapPenjualan = cloudRekap;
                 renderRekapUI();
+                renderLaporanHarian();
             });
 
             // 3. Sync Settings Realtime
@@ -721,6 +928,10 @@
         function showTab(tabId) {
             document.querySelectorAll('.tab-page').forEach(el => el.style.display = 'none');
             document.getElementById(tabId).style.display = 'block';
+
+            if (tabId === 'laporanHarianTab') {
+                renderLaporanHarian();
+            }
         }
 
         // --- SETTINGS LOGIC ---
@@ -786,20 +997,37 @@
             alert('✅ Pengaturan layout bill, logo & tarif pajak berhasil disimpan ke Cloud!');
         }
 
-        // --- MASTER BARANG LOGIC ---
+        // --- MASTER ITEM LOGIC ---
+        function calculateNetSellingPrice() {
+            const sellingPrice = parseFloat(document.getElementById('modalSellingPrice').value) || 0;
+            const netSellingPrice = Math.round(sellingPrice / 1.21);
+            document.getElementById('modalNetSellingPrice').value = netSellingPrice || 0;
+        }
+
+        function calculateNetSellingPriceEdit() {
+            const sellingPrice = parseFloat(document.getElementById('editSellingPrice').value) || 0;
+            const netSellingPrice = Math.round(sellingPrice / 1.21);
+            document.getElementById('editNetSellingPrice').value = netSellingPrice || 0;
+        }
+
         function renderMasterItemsUI() {
             const body = document.getElementById('itemsMasterTableBody');
             body.innerHTML = '';
             masterItems.forEach((item, index) => {
+                const sellingPriceVal = item.sellingPrice ? formatRpExact(item.sellingPrice) : '-';
                 body.innerHTML += `
                     <tr>
                         <td><span class="badge bg-secondary">${item.kode}</span></td>
                         <td class="fw-bold">${item.nama}</td>
                         <td>${item.kategori || 'F&B'}</td>
                         <td>${item.satuan}</td>
-                        <td>${formatRpExact(item.harga)}</td>
+                        <td>${sellingPriceVal}</td>
+                        <td class="fw-bold text-success">${formatRpExact(item.harga)}</td>
                         <td class="text-center">
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteMasterItem(${index}, '${item.docId || ''}')"><i class="bi bi-trash"></i></button>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary" onclick="openEditItemModal(${index})" title="Edit Item"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-outline-danger" onclick="deleteMasterItem(${index}, '${item.docId || ''}')" title="Hapus Item"><i class="bi bi-trash"></i></button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -812,14 +1040,70 @@
             renderMasterItemsUI();
         }
 
+        function openEditItemModal(index) {
+            const item = masterItems[index];
+            if(!item) return;
+
+            document.getElementById('editItemIndex').value = index;
+            document.getElementById('editItemDocId').value = item.docId || '';
+            document.getElementById('editKodeBarang').value = item.kode || '';
+            document.getElementById('editNamaBarang').value = item.nama || '';
+            document.getElementById('editKategoriBarang').value = item.kategori || 'Food & Beverage';
+            document.getElementById('editSatuanBarang').value = item.satuan || 'Porsi';
+            document.getElementById('editSellingPrice').value = item.sellingPrice || '';
+            
+            calculateNetSellingPriceEdit();
+
+            const editModal = new bootstrap.Modal(document.getElementById('editItemModal'));
+            editModal.show();
+        }
+
+        async function submitEditItem(e) {
+            e.preventDefault();
+            const index = parseInt(document.getElementById('editItemIndex').value);
+            const docId = document.getElementById('editItemDocId').value;
+
+            const sellingPrice = parseFloat(document.getElementById('editSellingPrice').value) || 0;
+            const netSellingPrice = parseFloat(document.getElementById('editNetSellingPrice').value) || Math.round(sellingPrice / 1.21);
+
+            const updatedItem = {
+                ...masterItems[index],
+                kode: document.getElementById('editKodeBarang').value.trim(),
+                nama: document.getElementById('editNamaBarang').value.trim(),
+                kategori: document.getElementById('editKategoriBarang').value.trim(),
+                satuan: document.getElementById('editSatuanBarang').value.trim(),
+                sellingPrice: sellingPrice,
+                harga: netSellingPrice
+            };
+
+            masterItems[index] = updatedItem;
+            renderMasterItemsUI();
+
+            // Simpan perubahan ke Cloud Firebase jika terhubung
+            if (docId && window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
+                try {
+                    await window.dbSetDoc(window.dbDoc(window.db, "master_barang", docId), updatedItem);
+                } catch(err) {
+                    console.error("Gagal mengupdate item di cloud:", err);
+                }
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('editItemModal')).hide();
+            alert('✅ Data item berhasil diperbarui!');
+        }
+
         async function submitAddItem(e) {
             e.preventDefault();
+            const sellingPrice = parseFloat(document.getElementById('modalSellingPrice').value) || 0;
+            const netSellingPrice = parseFloat(document.getElementById('modalNetSellingPrice').value) || Math.round(sellingPrice / 1.21);
+
             const newItem = {
                 kode: document.getElementById('modalKodeBarang').value.trim(),
                 nama: document.getElementById('modalNamaBarang').value.trim(),
                 kategori: document.getElementById('modalKategoriBarang').value.trim(),
                 satuan: document.getElementById('modalSatuanBarang').value.trim(),
-                harga: parseInt(document.getElementById('modalHargaBarang').value)
+                sellingPrice: sellingPrice,
+                harga: netSellingPrice
             };
 
             masterItems.push(newItem);
@@ -836,11 +1120,11 @@
 
             document.getElementById('formAddItem').reset();
             bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide();
-            alert('✅ Barang berhasil ditambahkan!');
+            alert('✅ Item berhasil ditambahkan!');
         }
 
         async function deleteMasterItem(index, docId) {
-            if(confirm('Hapus barang ini dari database master?')) {
+            if(confirm('Hapus item ini dari database master?')) {
                 masterItems.splice(index, 1);
                 renderMasterItemsUI();
 
@@ -855,11 +1139,11 @@
         }
 
         function exportItemsCSV() {
-            let csv = 'Kode Barang,Nama Barang,Kategori,Satuan,Harga Satuan\n';
+            let csv = 'Kode Item,Nama Item,Kategori,Satuan,Selling Price,Net Selling Price\n';
             masterItems.forEach(item => {
-                csv += `"${item.kode}","${item.nama}","${item.kategori || 'F&B'}","${item.satuan}",${item.harga}\n`;
+                csv += `"${item.kode}","${item.nama}","${item.kategori || 'F&B'}","${item.satuan}",${item.sellingPrice || 0},${item.harga}\n`;
             });
-            downloadCSV(csv, `Master_Barang_${new Date().toISOString().slice(0,10)}.csv`);
+            downloadCSV(csv, `Master_Item_${new Date().toISOString().slice(0,10)}.csv`);
         }
 
         function importItemsCSV(inputEl) {
@@ -873,12 +1157,16 @@
                 for(let i=1; i<lines.length; i++) {
                     const cols = lines[i].split(',').map(c => c.replace(/"/g, '').trim());
                     if(cols.length >= 4 && cols[0] !== '') {
+                        const sellingPrice = parseFloat(cols[4]) || 0;
+                        const netSellingPrice = parseFloat(cols[5]) || Math.round(sellingPrice / 1.21) || parseFloat(cols[3]) || 0;
+
                         const itemObj = {
                             kode: cols[0],
                             nama: cols[1],
                             kategori: cols[2] || 'F&B',
                             satuan: cols[3] || 'Pcs',
-                            harga: parseInt(cols[4] || cols[3]) || 0
+                            sellingPrice: sellingPrice,
+                            harga: netSellingPrice
                         };
                         masterItems.push(itemObj);
 
@@ -889,7 +1177,7 @@
                     }
                 }
                 renderMasterItemsUI();
-                alert(`✅ Berhasil mengimpor ${addedCount} data barang ke Cloud!`);
+                alert(`✅ Berhasil mengimpor ${addedCount} data item ke Cloud!`);
                 inputEl.value = '';
             };
             reader.readAsText(file);
@@ -1062,6 +1350,10 @@
             document.getElementById('pTax').innerText = formatRpExact(taxVal);
             document.getElementById('pGrandTotal').innerText = formatRpExact(grandTotal);
 
+            // Tentukan Elemen Cetak
+            document.getElementById('printAreaOnly').classList.add('printable-active');
+            document.getElementById('printAreaLaporan').classList.remove('printable-active');
+
             window.print();
         }
 
@@ -1129,38 +1421,100 @@
             calculateTotal();
 
             renderRekapUI();
+            renderLaporanHarian();
             alert(`✅ Transaksi Bill (${noBill}) berhasil tersimpan ke Cloud Realtime!`);
         }
 
         // --- REKAP PENJUALAN LOGIC ---
-        function renderRekapUI() {
+        function parseRekapDate(dateStr) {
+            if (!dateStr) return null;
+            // Format diharapkan DD/MM/YYYY
+            const parts = dateStr.split(' ')[0].split('/');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return new Date(dateStr);
+        }
+
+        function renderRekapUI(dataToRender = null) {
+            const list = dataToRender || rekapPenjualan;
             const body = document.getElementById('rekapTableBody');
             body.innerHTML = '';
-            rekapPenjualan.forEach((item, index) => {
-                body.innerHTML += `
-                    <tr>
-                        <td><span class="badge bg-primary">${item.noBill}</span></td>
-                        <td>${item.tanggal}</td>
-                        <td>${item.roomGuest}</td>
-                        <td>${item.kodeBarang}</td>
-                        <td class="fw-bold">${item.namaBarang}</td>
-                        <td>${formatRpExact(item.harga)}</td>
-                        <td><span class="badge bg-light text-dark fs-6">${item.qty}</span></td>
-                        <td>${formatRpExact(item.subtotal)}</td>
-                        <td>${formatRpExact(item.discount)}</td>
-                        <td>${formatRpExact(item.serviceCharge || 0)}</td>
-                        <td>${formatRpExact(item.pajak || 0)}</td>
-                        <td class="fw-bold text-success">${formatRpExact(item.grandTotal)}</td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary" onclick="reprintBill('${item.noBill}')" title="Cetak Ulang Bill"><i class="bi bi-printer"></i></button>
-                                <button class="btn btn-outline-danger" onclick="deleteRekapRow(${index}, '${item.docId || ''}')" title="Hapus"><i class="bi bi-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+
+            let totalQty = 0;
+            let totalGrandTotal = 0;
+
+            if (list.length === 0) {
+                body.innerHTML = `<tr><td colspan="13" class="text-center text-muted py-3">Tidak ada data transaksi.</td></tr>`;
+            } else {
+                list.forEach((item, index) => {
+                    totalQty += parseInt(item.qty || 0);
+                    totalGrandTotal += parseInt(item.grandTotal || 0);
+
+                    body.innerHTML += `
+                        <tr>
+                            <td><span class="badge bg-primary">${item.noBill}</span></td>
+                            <td>${item.tanggal}</td>
+                            <td>${item.roomGuest}</td>
+                            <td>${item.kodeBarang}</td>
+                            <td class="fw-bold">${item.namaBarang}</td>
+                            <td>${formatRpExact(item.harga)}</td>
+                            <td><span class="badge bg-light text-dark fs-6">${item.qty}</span></td>
+                            <td>${formatRpExact(item.subtotal)}</td>
+                            <td>${formatRpExact(item.discount)}</td>
+                            <td>${formatRpExact(item.serviceCharge || 0)}</td>
+                            <td>${formatRpExact(item.pajak || 0)}</td>
+                            <td class="fw-bold text-success">${formatRpExact(item.grandTotal)}</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-primary" onclick="reprintBill('${item.noBill}')" title="Cetak Ulang Bill"><i class="bi bi-printer"></i></button>
+                                    <button class="btn btn-outline-danger" onclick="deleteRekapRow(${index}, '${item.docId || ''}')" title="Hapus"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('rekapSummaryQty').innerText = `${totalQty} Qty`;
+            document.getElementById('rekapSummaryGrandTotal').innerText = formatRpExact(totalGrandTotal);
+
+            if (!dataToRender) {
+                localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
+            }
+        }
+
+        function applyRekapDateFilter() {
+            const startStr = document.getElementById('rekapStartDate').value;
+            const endStr = document.getElementById('rekapEndDate').value;
+
+            if (!startStr && !endStr) {
+                renderRekapUI();
+                return;
+            }
+
+            const startDate = startStr ? new Date(startStr) : null;
+            if (startDate) startDate.setHours(0,0,0,0);
+
+            const endDate = endStr ? new Date(endStr) : null;
+            if (endDate) endDate.setHours(23,59,59,999);
+
+            const filtered = rekapPenjualan.filter(item => {
+                const itemDate = parseRekapDate(item.tanggal);
+                if (!itemDate || isNaN(itemDate.getTime())) return true;
+
+                if (startDate && itemDate < startDate) return false;
+                if (endDate && itemDate > endDate) return false;
+                return true;
             });
-            localStorage.setItem(STORAGE_REKAP, JSON.stringify(rekapPenjualan));
+
+            renderRekapUI(filtered);
+        }
+
+        function resetRekapDateFilter() {
+            document.getElementById('rekapStartDate').value = '';
+            document.getElementById('rekapEndDate').value = '';
+            renderRekapUI();
         }
 
         function reprintBill(noBillTarget) {
@@ -1220,6 +1574,10 @@
             document.getElementById('pTax').innerText = formatRpExact(taxVal);
             document.getElementById('pGrandTotal').innerText = formatRpExact(grandTotalVal);
 
+            // Tentukan Elemen Cetak
+            document.getElementById('printAreaOnly').classList.add('printable-active');
+            document.getElementById('printAreaLaporan').classList.remove('printable-active');
+
             window.print();
         }
 
@@ -1252,6 +1610,7 @@
 
             rekapPenjualan.push(rekapData);
             renderRekapUI();
+            renderLaporanHarian();
 
             if (window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
                 try {
@@ -1270,6 +1629,7 @@
             if(confirm('Hapus baris ini dari rekapan?')) {
                 rekapPenjualan.splice(index, 1);
                 renderRekapUI();
+                renderLaporanHarian();
 
                 if (docId && window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
                     try {
@@ -1285,6 +1645,7 @@
             if(confirm('⚠️ Hapus seluruh data rekapan penjualan?')) {
                 rekapPenjualan = [];
                 renderRekapUI();
+                renderLaporanHarian();
             }
         }
 
@@ -1293,7 +1654,7 @@
                 alert('Belum ada data rekapan!');
                 return;
             }
-            let csv = 'No Bill,Tanggal Waktu,Room Guest,Kode Barang,Nama Barang,Harga Satuan,Qty,Subtotal,Discount,Service Charge,Gov Tax,Total\n';
+            let csv = 'No Bill,Tanggal Waktu,Room Guest,Kode Item,Nama Item,Harga Satuan,Qty,Subtotal,Discount,Service Charge,Gov Tax,Total\n';
             rekapPenjualan.forEach(row => {
                 csv += `"${row.noBill}","${row.tanggal}","${row.roomGuest}","${row.kodeBarang}","${row.namaBarang}",${row.harga},${row.qty},${row.subtotal},${row.discount},${row.serviceCharge || 0},${row.pajak || 0},${row.grandTotal}\n`;
             });
@@ -1334,10 +1695,155 @@
                     }
                 }
                 renderRekapUI();
+                renderLaporanHarian();
                 alert(`✅ Berhasil mengimpor ${count} data rekapan ke Cloud!`);
                 inputEl.value = '';
             };
             reader.readAsText(file);
+        }
+
+        // --- LAPORAN HARIAN LOGIC ---
+        function getSelectedLaporanData() {
+            const dateVal = document.getElementById('filterTanggalLaporan').value; // Format: YYYY-MM-DD
+            if(!dateVal) return { itemsSummary: [], totals: {} };
+
+            const [year, month, day] = dateVal.split('-');
+            const targetDateStr = `${day}/${month}/${year}`; // DD/MM/YYYY
+
+            // Filter rekap berdasarkan tanggal
+            const filteredRekap = rekapPenjualan.filter(item => {
+                if(!item.tanggal) return false;
+                return item.tanggal.startsWith(targetDateStr);
+            });
+
+            // Hitung Rekapan Per Item
+            const itemMap = {};
+            const uniqueBills = new Set();
+            let totalDiscount = 0;
+            let totalService = 0;
+            let totalTax = 0;
+            let totalGrandTotal = 0;
+
+            filteredRekap.forEach(row => {
+                uniqueBills.add(row.noBill);
+                const key = row.kodeBarang || row.namaBarang;
+                
+                if (!itemMap[key]) {
+                    itemMap[key] = {
+                        kode: row.kodeBarang || '-',
+                        nama: row.namaBarang,
+                        harga: row.harga,
+                        qty: 0,
+                        nominal: 0
+                    };
+                }
+
+                itemMap[key].qty += parseInt(row.qty) || 0;
+                itemMap[key].nominal += parseInt(row.subtotal) || (row.harga * row.qty);
+
+                totalDiscount += row.discount || 0;
+                totalService += row.serviceCharge || 0;
+                totalTax += row.pajak || 0;
+                totalGrandTotal += row.grandTotal || 0;
+            });
+
+            const itemsSummary = Object.values(itemMap);
+            const totalQty = itemsSummary.reduce((acc, curr) => acc + curr.qty, 0);
+            const totalSubtotal = itemsSummary.reduce((acc, curr) => acc + curr.nominal, 0);
+
+            return {
+                targetDateStr,
+                itemsSummary,
+                totals: {
+                    totalBillCount: uniqueBills.size,
+                    totalQty,
+                    totalSubtotal,
+                    totalDiscount,
+                    totalService,
+                    totalTax,
+                    totalGrandTotal
+                }
+            };
+        }
+
+        function renderLaporanHarian() {
+            const data = getSelectedLaporanData();
+            const { totals, itemsSummary } = data;
+
+            // Update Summary Cards
+            document.getElementById('summaryTotalBill').innerText = totals.totalBillCount || 0;
+            document.getElementById('summaryTotalQty').innerText = totals.totalQty || 0;
+            document.getElementById('summaryTotalSubtotal').innerText = formatRpExact(totals.totalSubtotal || 0);
+            document.getElementById('summaryTotalGrandTotal').innerText = formatRpExact(totals.totalGrandTotal || 0);
+
+            // Render Table Rows
+            const tbody = document.getElementById('laporanItemTableBody');
+            tbody.innerHTML = '';
+
+            if (itemsSummary.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">Tidak ada data penjualan pada tanggal ini.</td></tr>`;
+            } else {
+                itemsSummary.forEach((item, idx) => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="text-center">${idx + 1}</td>
+                            <td><span class="badge bg-secondary">${item.kode}</span></td>
+                            <td class="fw-bold">${item.nama}</td>
+                            <td class="text-end">${formatRpExact(item.harga)}</td>
+                            <td class="text-center fw-bold">${item.qty}</td>
+                            <td class="text-end fw-bold">${formatRpExact(item.nominal)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Footer Table
+            document.getElementById('footTotalQty').innerText = totals.totalQty || 0;
+            document.getElementById('footTotalNominal').innerText = formatRpExact(totals.totalSubtotal || 0);
+        }
+
+        function cetakLaporanHarian() {
+            const data = getSelectedLaporanData();
+            const { targetDateStr, totals, itemsSummary } = data;
+
+            document.getElementById('pLapSubTitle').innerText = `LAPORAN HARIAN PENJUALAN (${appSettings.billTitle || 'ROOM SERVICE'})`;
+            document.getElementById('pLapTanggalInfo').innerText = `Tanggal Penjualan: ${targetDateStr}`;
+            document.getElementById('pLapPrintDate').innerText = formatDateTimeNow();
+
+            const tbody = document.getElementById('pLapTableBody');
+            tbody.innerHTML = '';
+
+            if (itemsSummary.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 10px;">Tidak ada transaksi pada tanggal ini.</td></tr>`;
+            } else {
+                itemsSummary.forEach((item, idx) => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="padding: 6px; border: 1px solid #ddd; text-align: center;">${idx + 1}</td>
+                            <td style="padding: 6px; border: 1px solid #ddd;">${item.kode}</td>
+                            <td style="padding: 6px; border: 1px solid #ddd; font-weight: bold;">${item.nama}</td>
+                            <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatRpExact(item.harga)}</td>
+                            <td style="padding: 6px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${item.qty}</td>
+                            <td style="padding: 6px; border: 1px solid #ddd; text-align: right;">${formatRpExact(item.nominal)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('pLapTotalQty').innerText = totals.totalQty || 0;
+            document.getElementById('pLapTotalNominal').innerText = formatRpExact(totals.totalSubtotal || 0);
+
+            document.getElementById('pLapSubtotalVal').innerText = formatRpExact(totals.totalSubtotal || 0);
+            document.getElementById('pLapDiscountVal').innerText = formatRpExact(totals.totalDiscount || 0);
+            document.getElementById('pLapServiceVal').innerText = formatRpExact(totals.totalService || 0);
+            document.getElementById('pLapTaxVal').innerText = formatRpExact(totals.totalTax || 0);
+            document.getElementById('pLapGrandTotalVal').innerText = formatRpExact(totals.totalGrandTotal || 0);
+
+            // Tentukan Elemen Cetak
+            document.getElementById('printAreaLaporan').classList.add('printable-active');
+            document.getElementById('printAreaOnly').classList.remove('printable-active');
+
+            window.print();
         }
 
         function downloadCSV(csvContent, filename) {
