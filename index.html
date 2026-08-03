@@ -1458,7 +1458,7 @@
                             <td class="fw-bold text-success">${formatRpExact(item.grandTotal)}</td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <button class="btn btn-outline-primary" onclick="reprintBill('${item.noBill}')" title="Cetak Ulang Bill"><i class="bi bi-printer"></i></button>
+                                    <button class="btn btn-outline-primary" onclick="reprintBill('${String(item.noBill).replace(/'/g, "\\'")}', '${String(item.tanggal || '').replace(/'/g, "\\'")}')" title="Cetak Ulang Bill"><i class="bi bi-printer"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -1507,12 +1507,33 @@
             renderRekapUI();
         }
 
-        function reprintBill(noBillTarget) {
-            const billItems = rekapPenjualan.filter(item => item.noBill === noBillTarget);
+        function reprintBill(noBillTarget, tanggalTarget) {
+            let billItems = rekapPenjualan.filter(item => item.noBill === noBillTarget);
             if (billItems.length === 0) {
                 alert('Data bill tidak ditemukan!');
                 return;
             }
+
+            // Kunci ke SATU transaksi. Nomor bill bisa terpakai ulang di hari berbeda,
+            // jadi baris yang dicetak harus yang tanggal & waktunya sama persis.
+            if (tanggalTarget) {
+                const exactMatch = billItems.filter(item => (item.tanggal || '') === tanggalTarget);
+                if (exactMatch.length > 0) billItems = exactMatch;
+            }
+
+            // Gabungkan item yang sama dalam satu bill agar tidak tercetak dobel baris
+            const mergedMap = {};
+            billItems.forEach(item => {
+                const key = item.kodeBarang || item.namaBarang;
+                const qty = parseInt(item.qty) || 0;
+                const harga = parseFloat(item.harga) || 0;
+                if (!mergedMap[key]) {
+                    mergedMap[key] = { namaBarang: item.namaBarang, harga, qty: 0, lineTotal: 0 };
+                }
+                mergedMap[key].qty += qty;
+                mergedMap[key].lineTotal += parseInt(item.subtotal) || (harga * qty);
+            });
+            const printItems = Object.values(mergedMap);
 
             const sample = billItems[0];
             const pLogoContainer = document.getElementById('pLogoContainer');
@@ -1540,23 +1561,35 @@
             pItemsBody.innerHTML = '';
 
             let totalSubtotal = 0;
-            let discountVal = sample.discount || 0;
-            let serviceVal = sample.serviceCharge || 0;
-            let taxVal = sample.pajak || 0;
-            let grandTotalVal = sample.grandTotal || 0;
+            const discountVal = parseInt(sample.discount) || 0;
 
-            billItems.forEach(item => {
-                const lineTotal = item.subtotal || (item.harga * item.qty);
-                totalSubtotal += lineTotal;
+            printItems.forEach(item => {
+                totalSubtotal += item.lineTotal;
                 pItemsBody.innerHTML += `
                     <tr>
                         <td style="text-align: left; padding: 4px 0;">${item.namaBarang}</td>
                         <td style="text-align: center; padding: 4px 0;">${item.qty}</td>
                         <td style="text-align: right; padding: 4px 0;">${formatRpExact(item.harga)}</td>
-                        <td style="text-align: right; padding: 4px 0;">${formatRpExact(lineTotal)}</td>
+                        <td style="text-align: right; padding: 4px 0;">${formatRpExact(item.lineTotal)}</td>
                     </tr>
                 `;
             });
+
+            // Pakai nilai tersimpan; kalau kosong (data lama / import), hitung ulang dari rate Pengaturan
+            let serviceVal = parseInt(sample.serviceCharge) || 0;
+            let taxVal = parseInt(sample.pajak) || 0;
+            let grandTotalVal = parseInt(sample.grandTotal) || 0;
+
+            if (!serviceVal && !taxVal && !grandTotalVal) {
+                const serviceRate = parseFloat(appSettings.serviceRate || 0);
+                const taxRate = parseFloat(appSettings.taxRate || 0);
+                serviceVal = Math.round((totalSubtotal - discountVal) * (serviceRate / 100));
+                taxVal = Math.round((totalSubtotal - discountVal + serviceVal) * (taxRate / 100));
+            }
+
+            if (!grandTotalVal) {
+                grandTotalVal = Math.max(0, totalSubtotal - discountVal + serviceVal + taxVal);
+            }
 
             document.getElementById('pSubtotal').innerText = formatRpExact(totalSubtotal);
             document.getElementById('pDiscount').innerText = formatRpExact(discountVal);
