@@ -114,6 +114,48 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
+
+            /* ===== UKURAN BILL CETAK DIPERKECIL (khusus bill, laporan tidak terpengaruh) ===== */
+            #printAreaOnly.printable-active {
+                padding: 0 !important;
+            }
+            #printAreaOnly.printable-active .bill-paper {
+                max-width: 100mm !important;
+                width: 100mm !important;
+                margin: 0 !important;
+                padding: 6mm 5mm !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                font-size: 10px !important;
+                line-height: 1.35 !important;
+            }
+            #printAreaOnly.printable-active .bill-logo-img {
+                max-height: 42px !important;
+                max-width: 140px !important;
+            }
+            #printAreaOnly.printable-active #pCategoryTitle {
+                font-size: 12px !important;
+                margin: 5px 0 8px 0 !important;
+            }
+            #printAreaOnly.printable-active #pLogoContainer h3 { font-size: 14px !important; }
+            #printAreaOnly.printable-active #pLogoContainer small { font-size: 8px !important; letter-spacing: 2px !important; }
+            #printAreaOnly.printable-active .highlight-yellow {
+                min-width: 55px !important;
+                padding: 1px 6px !important;
+            }
+            #printAreaOnly.printable-active .bill-room-line { margin-bottom: 6px !important; }
+            #printAreaOnly.printable-active .bill-table { margin-top: 6px !important; }
+            #printAreaOnly.printable-active .bill-table th { padding: 4px 3px !important; }
+            #printAreaOnly.printable-active .bill-table td { padding: 3px 3px !important; }
+            #printAreaOnly.printable-active .bill-summary { margin-top: 10px !important; padding-top: 6px !important; }
+            #printAreaOnly.printable-active .bill-summary > div { padding: 1px 0 !important; }
+            #printAreaOnly.printable-active .summary-label { padding-right: 10px !important; }
+            #printAreaOnly.printable-active .bill-summary span[id] { width: 80px !important; }
+            #printAreaOnly.printable-active .bill-total-row {
+                font-size: 11px !important;
+                padding: 5px 0 !important;
+            }
         }
     </style>
 
@@ -555,7 +597,7 @@
                 <div>No. Bill <span class="highlight-yellow" id="pNoBill">RS-005</span></div>
             </div>
 
-            <div style="margin-bottom: 20px;">
+            <div class="bill-room-line" style="margin-bottom: 20px;">
                 Room No. <span class="highlight-yellow" id="pRoomNo">101</span>
             </div>
 
@@ -573,7 +615,7 @@
                 </tbody>
             </table>
 
-            <div style="margin-top: 25px; border-top: 1px solid #f0f0f0; padding-top: 10px;">
+            <div class="bill-summary" style="margin-top: 25px; border-top: 1px solid #f0f0f0; padding-top: 10px;">
                 <div style="display: flex; justify-content: space-between; padding: 3px 0;">
                     <span class="summary-label" style="flex:1;">Subtotal</span>
                     <span id="pSubtotal" style="width: 120px; text-align: right;">Rp0</span>
@@ -590,7 +632,7 @@
                     <span class="summary-label" style="flex:1;">GOVERNMENT TAX</span>
                     <span id="pTax" style="width: 120px; text-align: right;">Rp0</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; font-size: 1.1rem; border-top: 1px dashed #ccc; margin-top: 5px;">
+                <div class="bill-total-row" style="display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; font-size: 1.1rem; border-top: 1px dashed #ccc; margin-top: 5px;">
                     <span class="summary-label" style="flex:1;">TOTAL</span>
                     <span id="pGrandTotal" style="width: 120px; text-align: right;">Rp0</span>
                 </div>
