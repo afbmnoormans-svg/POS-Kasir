@@ -358,7 +358,7 @@
                         <button class="btn btn-outline-primary btn-sm" onclick="document.getElementById('importRekapFile').click()"><i class="bi bi-file-earmark-arrow-up me-1"></i> Import CSV</button>
                         <input type="file" id="importRekapFile" accept=".csv" style="display:none;" onchange="importRekapCSV(this)">
                         <button class="btn btn-outline-success btn-sm" onclick="exportRekapCSV()"><i class="bi bi-file-earmark-excel me-1"></i> Export CSV/Excel</button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="clearRekap()"><i class="bi bi-trash me-1"></i> Hapus Semua</button>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis border d-inline-flex align-items-center px-3" title="Data rekapan bersifat permanen untuk mencegah kecurangan transaksi"><i class="bi bi-shield-lock-fill me-1"></i> Data Terkunci</span>
                     </div>
                 </div>
                 <div class="card-body">
@@ -433,28 +433,22 @@
                 </div>
                 <div class="card-body">
                     <div class="row mb-4">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="p-3 bg-light rounded border">
                                 <small class="text-muted d-block">Total Transaksi / Bill</small>
                                 <span class="fs-4 fw-bold text-dark" id="summaryTotalBill">0</span>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="p-3 bg-light rounded border">
                                 <small class="text-muted d-block">Total Item Terjual</small>
                                 <span class="fs-4 fw-bold text-dark" id="summaryTotalQty">0</span>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="p-3 bg-light rounded border">
-                                <small class="text-muted d-block">Total Subtotal Item</small>
+                                <small class="text-muted d-block">Total Penjualan</small>
                                 <span class="fs-4 fw-bold text-primary" id="summaryTotalSubtotal">Rp0</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-3 bg-light rounded border">
-                                <small class="text-muted d-block">Total Grand Total (Inc. Tax/Service)</small>
-                                <span class="fs-4 fw-bold text-success" id="summaryTotalGrandTotal">Rp0</span>
                             </div>
                         </div>
                     </div>
@@ -637,12 +631,8 @@
             </table>
 
             <div style="display: flex; justify-content: space-between; margin-top: 30px;">
-                <div style="width: 250px; font-size: 0.9rem;">
-                    <p style="margin-bottom: 5px;">Subtotal Item: <span id="pLapSubtotalVal" style="float: right;">Rp0</span></p>
-                    <p style="margin-bottom: 5px;">Total Discount: <span id="pLapDiscountVal" style="float: right;">Rp0</span></p>
-                    <p style="margin-bottom: 5px;">Total Service Charge: <span id="pLapServiceVal" style="float: right;">Rp0</span></p>
-                    <p style="margin-bottom: 5px;">Total Gov Tax: <span id="pLapTaxVal" style="float: right;">Rp0</span></p>
-                    <p style="font-weight: bold; border-top: 1px solid #000; pt-1; margin-top: 5px;">GRAND TOTAL: <span id="pLapGrandTotalVal" style="float: right;">Rp0</span></p>
+                <div style="width: 260px; font-size: 0.95rem;">
+                    <p style="font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px 0; margin: 0;">TOTAL PENJUALAN: <span id="pLapTotalPenjualanVal" style="float: right;">Rp0</span></p>
                 </div>
                 <div style="text-align: center; min-width: 180px;">
                     <p style="margin-bottom: 60px;">Semarang, <span id="pLapPrintDate">01/08/2026</span><br>Kasir / Admin,</p>
@@ -1468,7 +1458,6 @@
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <button class="btn btn-outline-primary" onclick="reprintBill('${item.noBill}')" title="Cetak Ulang Bill"><i class="bi bi-printer"></i></button>
-                                    <button class="btn btn-outline-danger" onclick="deleteRekapRow(${index}, '${item.docId || ''}')" title="Hapus"><i class="bi bi-trash"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -1625,28 +1614,19 @@
             alert('✅ Data transaksi manual berhasil masuk ke Cloud!');
         }
 
-        async function deleteRekapRow(index, docId) {
-            if(confirm('Hapus baris ini dari rekapan?')) {
-                rekapPenjualan.splice(index, 1);
-                renderRekapUI();
-                renderLaporanHarian();
-
-                if (docId && window.isFirebaseConfigured && window.isFirebaseConfigured() && window.db) {
-                    try {
-                        await window.dbDeleteDoc(window.dbDoc(window.db, "rekap_penjualan", docId));
-                    } catch(err) {
-                        console.error("Gagal hapus rekap cloud:", err);
-                    }
-                }
-            }
+        // ============================================================
+        // FITUR HAPUS REKAP DINONAKTIFKAN (ANTI-KECURANGAN TRANSAKSI)
+        // Data rekapan penjualan bersifat permanen dan tidak dapat
+        // dihapus dari aplikasi, baik per baris maupun keseluruhan.
+        // ============================================================
+        async function deleteRekapRow() {
+            alert('🔒 Fitur hapus rekapan penjualan telah dinonaktifkan untuk menjaga keakuratan data transaksi.');
+            return false;
         }
 
         function clearRekap() {
-            if(confirm('⚠️ Hapus seluruh data rekapan penjualan?')) {
-                rekapPenjualan = [];
-                renderRekapUI();
-                renderLaporanHarian();
-            }
+            alert('🔒 Fitur hapus rekapan penjualan telah dinonaktifkan untuk menjaga keakuratan data transaksi.');
+            return false;
         }
 
         function exportRekapCSV() {
@@ -1774,7 +1754,6 @@
             document.getElementById('summaryTotalBill').innerText = totals.totalBillCount || 0;
             document.getElementById('summaryTotalQty').innerText = totals.totalQty || 0;
             document.getElementById('summaryTotalSubtotal').innerText = formatRpExact(totals.totalSubtotal || 0);
-            document.getElementById('summaryTotalGrandTotal').innerText = formatRpExact(totals.totalGrandTotal || 0);
 
             // Render Table Rows
             const tbody = document.getElementById('laporanItemTableBody');
@@ -1833,11 +1812,7 @@
             document.getElementById('pLapTotalQty').innerText = totals.totalQty || 0;
             document.getElementById('pLapTotalNominal').innerText = formatRpExact(totals.totalSubtotal || 0);
 
-            document.getElementById('pLapSubtotalVal').innerText = formatRpExact(totals.totalSubtotal || 0);
-            document.getElementById('pLapDiscountVal').innerText = formatRpExact(totals.totalDiscount || 0);
-            document.getElementById('pLapServiceVal').innerText = formatRpExact(totals.totalService || 0);
-            document.getElementById('pLapTaxVal').innerText = formatRpExact(totals.totalTax || 0);
-            document.getElementById('pLapGrandTotalVal').innerText = formatRpExact(totals.totalGrandTotal || 0);
+            document.getElementById('pLapTotalPenjualanVal').innerText = formatRpExact(totals.totalSubtotal || 0);
 
             // Tentukan Elemen Cetak
             document.getElementById('printAreaLaporan').classList.add('printable-active');
