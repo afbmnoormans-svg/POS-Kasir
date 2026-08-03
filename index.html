@@ -461,7 +461,7 @@
                                     <th style="width: 50px;" class="text-center">No</th>
                                     <th>Kode Item</th>
                                     <th>Nama Item / Menu</th>
-                                    <th class="text-end">Harga Satuan</th>
+                                    <th class="text-end">Harga Satuan (Selling Price)</th>
                                     <th class="text-center">Qty Terjual</th>
                                     <th class="text-end">Total Nominal</th>
                                 </tr>
@@ -613,7 +613,7 @@
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 40px;">No</th>
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Kode</th>
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Nama Item / Menu</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Harga Satuan</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Harga Satuan<br><span style="font-weight: normal; font-size: 0.8em;">(Selling Price)</span></th>
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: center;">Qty Terjual</th>
                         <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">Total Nominal</th>
                     </tr>
@@ -1375,6 +1375,7 @@
                         kodeBarang: master.kode,
                         namaBarang: master.nama,
                         harga: master.harga,
+                        sellingPrice: master.sellingPrice || Math.round((master.harga || 0) * 1.21),
                         qty,
                         subtotal: master.harga * qty,
                         discount,
@@ -1683,6 +1684,25 @@
         }
 
         // --- LAPORAN HARIAN LOGIC ---
+        // Faktor gross-up dari harga net ke selling price (default 1.21 = service 10% + tax 10%)
+        function getGrossFactor() {
+            const s = parseFloat(appSettings.serviceRate || 0) / 100;
+            const t = parseFloat(appSettings.taxRate || 0) / 100;
+            const f = (1 + s) * (1 + t);
+            return f > 1 ? f : 1.21;
+        }
+
+        // Ambil SELLING PRICE untuk satu baris rekap:
+        // 1) dari data transaksi, 2) dari master item, 3) gross-up dari harga net
+        function getRowSellingPrice(row) {
+            if (row.sellingPrice && row.sellingPrice > 0) return Math.round(row.sellingPrice);
+
+            const master = masterItems.find(i => i.kode === row.kodeBarang);
+            if (master && master.sellingPrice && master.sellingPrice > 0) return Math.round(master.sellingPrice);
+
+            return Math.round((parseFloat(row.harga) || 0) * getGrossFactor());
+        }
+
         function getSelectedLaporanData() {
             const dateVal = document.getElementById('filterTanggalLaporan').value; // Format: YYYY-MM-DD
             if(!dateVal) return { itemsSummary: [], totals: {} };
@@ -1707,19 +1727,21 @@
             filteredRekap.forEach(row => {
                 uniqueBills.add(row.noBill);
                 const key = row.kodeBarang || row.namaBarang;
-                
+                const sellingPrice = getRowSellingPrice(row);
+
                 if (!itemMap[key]) {
                     itemMap[key] = {
                         kode: row.kodeBarang || '-',
                         nama: row.namaBarang,
-                        harga: row.harga,
+                        harga: sellingPrice,
                         qty: 0,
                         nominal: 0
                     };
                 }
 
-                itemMap[key].qty += parseInt(row.qty) || 0;
-                itemMap[key].nominal += parseInt(row.subtotal) || (row.harga * row.qty);
+                const rowQty = parseInt(row.qty) || 0;
+                itemMap[key].qty += rowQty;
+                itemMap[key].nominal += sellingPrice * rowQty;
 
                 totalDiscount += row.discount || 0;
                 totalService += row.serviceCharge || 0;
